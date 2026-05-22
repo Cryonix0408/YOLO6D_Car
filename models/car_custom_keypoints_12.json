@@ -1,0 +1,73 @@
+﻿{
+  "frame": "Rigid0",
+  "description": "12-point custom car model: 8 measured rigid markers plus 4 estimated wheel-footprint contour points for a fuller outer silhouette.",
+  "points": [
+    {
+      "name": "top_front_left",
+      "xyz_m": [0.040895094344632926, 0.022917007150075434, -0.0048280351154097985],
+      "source_marker_id": "20407"
+    },
+    {
+      "name": "top_front_right",
+      "xyz_m": [-0.04482372146040895, 0.02189784849089641, -0.004540804213903709],
+      "source_marker_id": "20406"
+    },
+    {
+      "name": "top_rear_right",
+      "xyz_m": [-0.048555763078739475, 0.024745461748538238, -0.07697747602156058],
+      "source_marker_id": "20403"
+    },
+    {
+      "name": "top_rear_left",
+      "xyz_m": [0.044882884239196334, 0.023370544852632923, -0.07948598304949216],
+      "source_marker_id": "20402"
+    },
+    {
+      "name": "chassis_front_left",
+      "xyz_m": [0.07659345345836216, -0.02884619111250988, 0.15283564932598384],
+      "source_marker_id": "20400"
+    },
+    {
+      "name": "chassis_front_right",
+      "xyz_m": [-0.06796563902583642, -0.02589818642511374, 0.152564281158514],
+      "source_marker_id": "20405"
+    },
+    {
+      "name": "chassis_rear_right",
+      "xyz_m": [-0.07697315728349792, -0.01992900717434141, -0.06726509041090876],
+      "source_marker_id": "20404"
+    },
+    {
+      "name": "chassis_rear_left",
+      "xyz_m": [0.07594685198048431, -0.018257721369562132, -0.07230254618440139],
+      "source_marker_id": "20401"
+    },
+    {
+      "name": "wheel_front_left_outer",
+      "xyz_m": [0.105, -0.070, 0.165],
+      "source_marker_id": null
+    },
+    {
+      "name": "wheel_front_right_outer",
+      "xyz_m": [-0.105, -0.070, 0.165],
+      "source_marker_id": null
+    },
+    {
+      "name": "wheel_rear_right_outer",
+      "xyz_m": [-0.105, -0.070, -0.090],
+      "source_marker_id": null
+    },
+    {
+      "name": "wheel_rear_left_outer",
+      "xyz_m": [0.105, -0.070, -0.090],
+      "source_marker_id": null
+    }
+  ],
+  "edges": [
+    [0, 1], [1, 2], [2, 3], [3, 0],
+    [4, 5], [5, 6], [6, 7], [7, 4],
+    [0, 4], [1, 5], [2, 6], [3, 7],
+    [8, 9], [9, 10], [10, 11], [11, 8],
+    [4, 8], [5, 9], [6, 10], [7, 11]
+  ]
+}

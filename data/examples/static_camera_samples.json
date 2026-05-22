@@ -1,0 +1,14 @@
+﻿{
+  "samples": [
+    {
+      "world_board": {
+        "translation_m": [1.2, 0.3, 0.8],
+        "quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      "camera_board": {
+        "translation_m": [0.1, -0.05, 0.9],
+        "quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      }
+    }
+  ]
+}
