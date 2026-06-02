@@ -1,0 +1,13 @@
+models:
+  - model_id: "car_pose_12pts_v1_yolov8n_pose"
+    dataset: "car_pose_12pts_v1"
+    backbone: "yolov8n-pose.pt"
+    train_run: "outputs/train_runs/car_pose_12pts_v1_yolov8n_pose"
+    best_pt: "models/car_pose_12pts_v1_yolov8n_pose/best.pt"
+    last_pt: "models/car_pose_12pts_v1_yolov8n_pose/last.pt"
+    data_yaml: "outputs/datasets/car_pose_12pts_v1/dataset.yaml"
+    image_size: 640
+    epochs: 100
+    batch: 16
+    status: "planned"
+    notes: "Initial YOLO Pose 12-keypoint model."

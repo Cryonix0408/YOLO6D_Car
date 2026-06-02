@@ -1,0 +1,13 @@
+kalman:
+  enabled: true
+  state_dim: 12
+  measurement_dim: 6
+  default_fps: 30.0
+  position_process_noise: 0.01
+  velocity_process_noise: 0.1
+  rotation_process_noise: 0.01
+  angular_velocity_process_noise: 0.1
+  position_measurement_noise: 0.005
+  rotation_measurement_noise: 0.02
+  max_reprojection_error_px: 8.0
+  max_missing_frames: 10

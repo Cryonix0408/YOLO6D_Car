@@ -1,0 +1,5 @@
+{
+  "description": "Tiny synthetic YOLO pose labels for visualize_auto_labels.py smoke testing.",
+  "num_samples": 2,
+  "keypoints": 12
+}

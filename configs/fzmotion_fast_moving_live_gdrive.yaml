@@ -1,0 +1,71 @@
+# G-drive version of fzmotion_fast_moving_live.yaml.
+# Use with: --paths-config configs/paths_local.yaml
+
+camera:
+  source: d455
+  color_width: 640
+  color_height: 480
+  fps: 60
+  enable_depth: false
+  align_depth_to_color: false
+
+mocap:
+  enabled: false
+  mode: csv
+  csv_path: ''
+  camera_rigid_body: Rigid1
+  object_rigid_body: Rigid0
+  max_time_diff_s: 0.03
+  time_offset_s: 0.0
+  camera_optical_frame: camera_optical
+  object_model_frame: car_model
+  T_camera_rigid_to_optical:
+    translation_m: [ -0.008223410649359969, 0.02570880431884894, 0.0543050529769546 ]
+    quaternion_xyzw: [ 0.006228757749854643, -0.014612849250106353, 0.9998574376921459, -0.005724640196906755 ]
+  T_world_camera_optical: null
+  T_object_rigid_to_model:
+    translation_m: [ 0.0, 0.0, 0.0 ]
+    quaternion_xyzw: [ 0.0, 0.0, 0.0, 1.0 ]
+
+object_model:
+  label: car_model
+  keypoints_mode: custom
+  model_json_path: models/car_custom_keypoints_12_migrated_200xx_exact.json
+  include_center: false
+
+yolo6d:
+  backend: ultralytics_live
+  conf_threshold: 0.22
+  replay_json_path: null
+  model_path: outputs/train_runs/uav_4m_20sessions_pose_v1/weights/best.pt
+  inference_imgsz: 640
+  inference_device: '0'
+  replay_timestamp_tolerance_s: 0.05
+  roi_tracker:
+    enabled: true
+    expand_ratio: 3.0
+    min_size_px: 160
+    full_frame_interval: 5
+    max_missed_frames: 1
+    square_crop: true
+    predict_motion: true
+    velocity_alpha: 0.70
+    max_prediction_frames: 4
+  temporal_filter:
+    enabled: true
+    translation_alpha: 0.75
+    rotation_alpha: 0.65
+    max_translation_jump_m: 0.80
+    max_angle_jump_deg: 75.0
+    hold_last_frames: 1
+  pnp:
+    ransac_reproj_threshold_px: 6.0
+    iterations_count: 100
+    confidence: 0.99
+    min_keypoint_score: 0.15
+
+output:
+  print_json_lines: true
+  show_window: true
+  save_csv: outputs/fast_moving_live_pose_log.csv
+

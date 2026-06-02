@@ -1,0 +1,4 @@
+frame,timestamp_s,image
+0,0.000,images/frame_000001.txt
+1,0.033,images/frame_000002.txt
+

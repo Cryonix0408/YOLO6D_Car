@@ -1,0 +1,51 @@
+# G-drive version of object_capture.yaml.
+# Use with: --paths-config configs/paths_local.yaml
+
+camera:
+  source: d455
+  color_width: 1280
+  color_height: 720
+  fps: 15
+  enable_depth: false
+  align_depth_to_color: false
+
+mocap:
+  enabled: true
+  mode: csv
+  csv_path: FZmotion_Data/Data 2026-03-26 15-52-58.csv
+  camera_rigid_body: Rigid1
+  object_rigid_body: Rigid0
+  max_time_diff_s: 0.03
+  time_offset_s: 0.0
+  camera_optical_frame: camera_optical
+  object_model_frame: car_model
+  T_camera_rigid_to_optical:
+    translation_m: [0.004496242782545951, 0.06085046472645088, -0.044793392192612774]
+    quaternion_xyzw: [0.9993583520083644, 0.02577533993950418, 0.02304670212384463, -0.009346959042583257]
+  T_world_camera_optical: null
+  T_object_rigid_to_model:
+    translation_m: [0.0, 0.0, 0.0]
+    quaternion_xyzw: [0.0, 0.0, 0.0, 1.0]
+
+object_model:
+  label: car_model
+  keypoints_mode: cuboid
+  dimensions_m: [0.25, 0.25, 0.15]
+  include_center: true
+
+yolo6d:
+  backend: json_replay
+  conf_threshold: 0.25
+  replay_json_path: data/examples/sample_predictions.json
+  replay_timestamp_tolerance_s: 0.05
+  pnp:
+    ransac_reproj_threshold_px: 4.0
+    iterations_count: 100
+    confidence: 0.99
+    min_keypoint_score: 0.20
+
+output:
+  print_json_lines: true
+  show_window: false
+  save_csv: outputs/fzmotion_pose_log.csv
+

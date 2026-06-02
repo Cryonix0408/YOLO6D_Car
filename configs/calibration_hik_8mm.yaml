@@ -1,0 +1,32 @@
+camera:
+  name: "hikrobot_mv_cs016_10uc"
+  lens: "8mm"
+  width: 1440
+  height: 1080
+  fps: 30
+  exposure_us: 10000
+  gain: 0
+  pixel_format: "BGR8"
+
+calibration_board:
+  type: "chessboard"
+  pattern_cols: 9
+  pattern_rows: 6
+  square_size_mm: 25.0
+
+capture:
+  auto_calibrate_when_enough_samples: true
+  min_samples: 30
+  max_samples: 80
+  min_time_between_samples_s: 0.8
+  auto_calibrate_delay_s: 3.0
+  blur_threshold: 80.0
+  min_corner_coverage_ratio: 0.25
+  min_center_shift_ratio: 0.08
+  min_area_change_ratio: 0.20
+  min_pose_delta: 0.10
+  save_debug_images: true
+
+output:
+  root: "outputs/calibration"
+  session_name: "hik_8mm"

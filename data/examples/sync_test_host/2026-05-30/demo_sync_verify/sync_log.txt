@@ -1,0 +1,16 @@
+[2026-05-30 03:30:20] START local_root=D:\Research\YOLO6D_Car\data\examples\sync_test destination_root=D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify dry_run=False overwrite=False verify=True
+[2026-05-30 03:30:20] EXTENSIONS .avi, .bag, .bmp, .csv, .jpeg, .jpg, .json, .md, .mkv, .mov, .mp4, .png, .tif, .tiff, .txt, .yaml, .yml
+[2026-05-30 03:30:20] COPY | D:\Research\YOLO6D_Car\data\examples\sync_test\images\frame_000001.txt -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\images\frame_000001.txt
+[2026-05-30 03:30:20] COPY | D:\Research\YOLO6D_Car\data\examples\sync_test\images\frame_000002.txt -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\images\frame_000002.txt
+[2026-05-30 03:30:20] COPY | D:\Research\YOLO6D_Car\data\examples\sync_test\README.md -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\README.md
+[2026-05-30 03:30:20] COPY | D:\Research\YOLO6D_Car\data\examples\sync_test\samples.csv -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\samples.csv
+[2026-05-30 03:30:20] COPY | D:\Research\YOLO6D_Car\data\examples\sync_test\session_info.json -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\session_info.json
+[2026-05-30 03:30:20] DONE scanned=5 copied=5 skipped=0 verified=5 log=D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\sync_log.txt
+[2026-05-30 03:30:26] START local_root=D:\Research\YOLO6D_Car\data\examples\sync_test destination_root=D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify dry_run=False overwrite=False verify=False
+[2026-05-30 03:30:26] EXTENSIONS .avi, .bag, .bmp, .csv, .jpeg, .jpg, .json, .md, .mkv, .mov, .mp4, .png, .tif, .tiff, .txt, .yaml, .yml
+[2026-05-30 03:30:26] SKIP destination already exists | D:\Research\YOLO6D_Car\data\examples\sync_test\images\frame_000001.txt -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\images\frame_000001.txt
+[2026-05-30 03:30:26] SKIP destination already exists | D:\Research\YOLO6D_Car\data\examples\sync_test\images\frame_000002.txt -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\images\frame_000002.txt
+[2026-05-30 03:30:26] SKIP destination already exists | D:\Research\YOLO6D_Car\data\examples\sync_test\README.md -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\README.md
+[2026-05-30 03:30:26] SKIP destination already exists | D:\Research\YOLO6D_Car\data\examples\sync_test\samples.csv -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\samples.csv
+[2026-05-30 03:30:26] SKIP destination already exists | D:\Research\YOLO6D_Car\data\examples\sync_test\session_info.json -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\session_info.json
+[2026-05-30 03:30:26] DONE scanned=5 copied=0 skipped=5 verified=0 log=D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync_verify\sync_log.txt

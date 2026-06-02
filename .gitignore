@@ -1,0 +1,42 @@
+﻿.venv/
+__pycache__/
+*.pyc
+outputs/
+captures/
+results/
+logs/
+.vscode/
+.idea/
+.idea/workspace.xml
+*.pyo
+*.pyd
+*.bak_*
+
+# IDE / local settings
+.idea/tasks.xml
+.idea/usage.statistics.xml
+$profilePath.bak_*
+
+# Large generated data
+FZmotion_Data/
+data/real/
+data/synthetic/
+!data/examples/
+
+# Model weights and exported engines
+*.pt
+*.pth
+*.onnx
+*.engine
+*.torchscript
+
+# Captured media / temporary files
+*.mp4
+*.avi
+*.bag
+*.npy
+*.npz
+*.mov
+*.mkv
+*.log
+*.tmp

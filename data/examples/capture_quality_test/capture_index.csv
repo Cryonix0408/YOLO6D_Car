@@ -1,0 +1,7 @@
+sample_id,timestamp,image_path,depth_path,preview_path,blur_score,frame_difference_score,scene_change_score,stable_frame_count,auto_saved,save_reason
+1,2026-05-30T00:00:01,images/sample_000001.png,,,101,3,0.02,5,true,auto_accept
+2,2026-05-30T00:00:02,images/sample_000002.png,,,102,6,0.04,5,true,auto_accept
+3,2026-05-30T00:00:03,images/sample_000003.png,,,103,9,0.06,5,true,auto_accept
+4,2026-05-30T00:00:04,images/sample_000004.png,,,104,12,0.08,5,true,auto_accept
+5,2026-05-30T00:00:05,images/sample_000005.png,,,105,15,0.1,5,true,auto_accept
+6,2026-05-30T00:00:06,images/sample_000006.png,,,106,18,0.12,5,true,auto_accept

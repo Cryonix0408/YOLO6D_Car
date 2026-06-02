@@ -1,0 +1,170 @@
+# G-drive version of uav_4m_20_sessions.yaml.
+# Use with: --paths-config configs/paths_local.yaml
+
+project_config: configs/fzmotion_fixed_camera_current_rigids_gdrive.yaml
+output_root: outputs/auto_labels/uav_4m_20_sessions_batch
+class_id: 0
+min_inframe_keypoints: 4
+save_overlays: true
+
+sessions:
+  - name: d40_bgA_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d40_bgA_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d40_bgA_lightOn.csv
+    distance_m: 4.0
+    background: A
+    light: on
+
+  - name: d35_bgA_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d35_bgA_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d35_bgA_lightOn.csv
+    distance_m: 3.5
+    background: A
+    light: on
+
+  - name: d30_bgA_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d30_bgA_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d30_bgA_lightOn.csv
+    distance_m: 3.0
+    background: A
+    light: on
+
+  - name: d20_bgA_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d20_bgA_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d20_bgA_lightOn.csv
+    distance_m: 2.0
+    background: A
+    light: on
+
+  - name: d10_bgA_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d10_bgA_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d10_bgA_lightOn.csv
+    distance_m: 1.0
+    background: A
+    light: on
+
+  - name: d40_bgA_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d40_bgA_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d40_bgA_lightOff.csv
+    distance_m: 4.0
+    background: A
+    light: off
+
+  - name: d35_bgA_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d35_bgA_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d35_bgA_lightOff.csv
+    distance_m: 3.5
+    background: A
+    light: off
+
+  - name: d30_bgA_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d30_bgA_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d30_bgA_lightOff.csv
+    distance_m: 3.0
+    background: A
+    light: off
+
+  - name: d20_bgA_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d20_bgA_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d20_bgA_lightOff.csv
+    distance_m: 2.0
+    background: A
+    light: off
+
+  - name: d10_bgA_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d10_bgA_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d10_bgA_lightOff.csv
+    distance_m: 1.0
+    background: A
+    light: off
+
+  - name: d40_bgB_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d40_bgB_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d40_bgB_lightOn.csv
+    distance_m: 4.0
+    background: B
+    light: on
+
+  - name: d35_bgB_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d35_bgB_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d35_bgB_lightOn.csv
+    distance_m: 3.5
+    background: B
+    light: on
+
+  - name: d30_bgB_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d30_bgB_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d30_bgB_lightOn.csv
+    distance_m: 3.0
+    background: B
+    light: on
+
+  - name: d20_bgB_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d20_bgB_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d20_bgB_lightOn.csv
+    distance_m: 2.0
+    background: B
+    light: on
+
+  - name: d10_bgB_lightOn
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d10_bgB_lightOn
+    csv_path: FZmotion_Data/uav_4m_reshoot_d10_bgB_lightOn.csv
+    distance_m: 1.0
+    background: B
+    light: on
+
+  - name: d40_bgB_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d40_bgB_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d40_bgB_lightOff.csv
+    distance_m: 4.0
+    background: B
+    light: off
+
+  - name: d35_bgB_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d35_bgB_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d35_bgB_lightOff.csv
+    distance_m: 3.5
+    background: B
+    light: off
+
+  - name: d30_bgB_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d30_bgB_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d30_bgB_lightOff.csv
+    distance_m: 3.0
+    background: B
+    light: off
+
+  - name: d20_bgB_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d20_bgB_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d20_bgB_lightOff.csv
+    distance_m: 2.0
+    background: B
+    light: off
+
+  - name: d10_bgB_lightOff
+    enabled: true
+    samples_dir: outputs/object_capture/uav_4m_reshoot_d10_bgB_lightOff
+    csv_path: FZmotion_Data/uav_4m_reshoot_d10_bgB_lightOff.csv
+    distance_m: 1.0
+    background: B
+    light: off
+

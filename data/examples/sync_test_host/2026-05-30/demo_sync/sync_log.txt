@@ -1,0 +1,8 @@
+[2026-05-30 03:29:45] START local_root=D:\Research\YOLO6D_Car\data\examples\sync_test destination_root=D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync dry_run=True overwrite=False verify=False
+[2026-05-30 03:29:45] EXTENSIONS .avi, .bag, .bmp, .csv, .jpeg, .jpg, .json, .md, .mkv, .mov, .mp4, .png, .tif, .tiff, .txt, .yaml, .yml
+[2026-05-30 03:29:45] DRY-RUN copy | D:\Research\YOLO6D_Car\data\examples\sync_test\images\frame_000001.txt -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync\images\frame_000001.txt
+[2026-05-30 03:29:45] DRY-RUN copy | D:\Research\YOLO6D_Car\data\examples\sync_test\images\frame_000002.txt -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync\images\frame_000002.txt
+[2026-05-30 03:29:45] DRY-RUN copy | D:\Research\YOLO6D_Car\data\examples\sync_test\README.md -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync\README.md
+[2026-05-30 03:29:45] DRY-RUN copy | D:\Research\YOLO6D_Car\data\examples\sync_test\samples.csv -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync\samples.csv
+[2026-05-30 03:29:45] DRY-RUN copy | D:\Research\YOLO6D_Car\data\examples\sync_test\session_info.json -> D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync\session_info.json
+[2026-05-30 03:29:45] DONE scanned=5 copied=0 skipped=0 verified=0 log=D:\Research\YOLO6D_Car\data\examples\sync_test_host\2026-05-30\demo_sync\sync_log.txt

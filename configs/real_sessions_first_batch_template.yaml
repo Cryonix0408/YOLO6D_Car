@@ -1,0 +1,210 @@
+dataset:
+  name: "car_fast6d_first_real_batch"
+  description: "First real lab validation batch for small-car 6DoF pose estimation."
+  data_root: "G:/YOLO6D_Car_Data"
+  created_by: "Yiyang"
+  version: "v1"
+
+sessions:
+  - session_id: "TODO_DATE_car_static_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "6mm"
+      intrinsics: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_static_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_static_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "static"
+      speed_level: "static"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_static_001"
+      dataset_split: "train"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_static_001.yaml"
+      ablation_run_name: "TODO_DATE_car_static_001"
+
+  - session_id: "TODO_DATE_car_slow_lateral_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "6mm"
+      intrinsics: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_slow_lateral_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_slow_lateral_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "lateral"
+      speed_level: "slow"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_slow_lateral_001"
+      dataset_split: "train"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_slow_lateral_001.yaml"
+      ablation_run_name: "TODO_DATE_car_slow_lateral_001"
+
+  - session_id: "TODO_DATE_car_slow_approach_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "8mm"
+      intrinsics: "outputs/calibration/hik_8mm/camera_intrinsics_hik_8mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_slow_approach_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_slow_approach_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "approach"
+      speed_level: "slow"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_slow_approach_001"
+      dataset_split: "train"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_slow_approach_001.yaml"
+      ablation_run_name: "TODO_DATE_car_slow_approach_001"
+
+  - session_id: "TODO_DATE_car_slow_receding_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "8mm"
+      intrinsics: "outputs/calibration/hik_8mm/camera_intrinsics_hik_8mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_slow_receding_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_slow_receding_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "receding"
+      speed_level: "slow"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_slow_receding_001"
+      dataset_split: "val"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_slow_receding_001.yaml"
+      ablation_run_name: "TODO_DATE_car_slow_receding_001"
+
+  - session_id: "TODO_DATE_car_rotation_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "6mm"
+      intrinsics: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_rotation_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_rotation_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "rotation"
+      speed_level: "medium"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_rotation_001"
+      dataset_split: "train"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_rotation_001.yaml"
+      ablation_run_name: "TODO_DATE_car_rotation_001"
+
+  - session_id: "TODO_DATE_car_fast_lateral_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "6mm"
+      intrinsics: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_fast_lateral_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_fast_lateral_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "lateral"
+      speed_level: "fast"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_fast_lateral_001"
+      dataset_split: "test"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_fast_lateral_001.yaml"
+      ablation_run_name: "TODO_DATE_car_fast_lateral_001"
+
+  - session_id: "TODO_DATE_car_occlusion_001"
+    date: "TODO_DATE"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "6mm"
+      intrinsics: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/TODO_DATE_car_occlusion_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/TODO_DATE/TODO_DATE_car_occlusion_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "occlusion"
+      speed_level: "slow"
+      occlusion: "partial"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/TODO_DATE_car_occlusion_001"
+      dataset_split: "test"
+      replay_config: "outputs/replay_configs/TODO_DATE_car_occlusion_001.yaml"
+      ablation_run_name: "TODO_DATE_car_occlusion_001"

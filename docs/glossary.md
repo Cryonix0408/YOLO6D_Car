@@ -1,0 +1,31 @@
+# Glossary
+
+- 6DoF: 六自由度位姿，包括 3D 平移和 3D 旋转。
+- PnP: Perspective-n-Point，用 3D 点和对应 2D 像素点估计相机与物体相对位姿。
+- rvec: OpenCV Rodrigues rotation vector，3 维旋转向量，方向表示旋转轴，长度表示旋转角。
+- tvec: 3 维平移向量，通常表示物体在相机坐标系下的位置。
+- camera intrinsics: 相机内参，包括 fx、fy、cx、cy 和畸变系数。
+- camera extrinsics: 相机外参，描述相机坐标系与世界/动捕坐标系之间的变换。
+- reprojection error: 3D 点投影回图像后，与观测 2D 点之间的像素误差。
+- keypoint: 关键点。这里指小车上定义的 12 个 3D/2D 对应点。
+- YOLO Pose: Ultralytics YOLO 的关键点检测任务，用于预测目标 bbox 和 2D keypoints。
+- FzMotion: 当前项目使用的动捕系统/数据来源。
+- Mocap: Motion capture，动捕。
+- rigid body: 动捕系统中的刚体，由多个 marker 定义，例如相机刚体、小车刚体。
+- session: 一次采集实验，通常对应一组图片/视频、一份 mocap CSV 和一组输出。
+- dataset: 训练数据集，由多个 session 的图片和标签整理成 train/val/test。
+- model registry: 模型登记表，记录 model_id、dataset、train_run、best.pt、状态等。
+- replay: 离线回放，不连接真实相机，用已保存的 keypoints/CSV/JSON 复现 pipeline。
+- realtime: 实时推理，连接相机并在线输出 pose。
+- Kalman Filter: 卡尔曼滤波，用上一状态和当前观测估计更平滑的状态。
+- prediction: Kalman 的预测步骤，只根据运动模型外推。
+- correction: Kalman 的校正步骤，用当前 measurement 修正预测。
+- measurement noise R: 观测噪声，R 越大表示越不相信当前观测。
+- process noise Q: 过程噪声，Q 越大表示运动模型本身越不可靠。
+- dynamic_R_scale: reliability-aware KF 中对 R 的动态缩放倍数。
+- reliability_score: 0~1 的观测可靠性分数，越大越可信。
+- jitter: 轨迹抖动指标，通常用相邻帧差分范数的 RMS 表示。
+- ATE: Absolute Trajectory Error，绝对轨迹误差。
+- RPE: Relative Pose Error，相邻帧相对运动误差。
+- ADD / ADD-S: 6D pose 常用指标，比较模型点变换后的平均距离；ADD-S 用于对称物体。
+- gt_pose.csv: 预处理后的 GT 位姿 CSV，字段为 timestamp, gt_tx, gt_ty, gt_tz, gt_rx, gt_ry, gt_rz。

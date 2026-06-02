@@ -1,0 +1,65 @@
+dataset:
+  name: "car_fast6d_v1"
+  description: "Fast-moving small car 6DoF dataset"
+  data_root: "G:/YOLO6D_Car_Data"
+  created_by: "Yiyang"
+  version: "v1"
+
+sessions:
+  - session_id: "2026-05-30_car_static_001"
+    date: "2026-05-30"
+    object: "car"
+    camera:
+      type: "d455"
+      lens: null
+      intrinsics: "configs/local_smoke_replay.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/2026-05-30_car_static_001.csv"
+      camera_rigid: "d455_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/2026-05-30/2026-05-30_car_static_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "static"
+      speed_level: "static"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/2026-05-30_car_static_001"
+      dataset_split: "train"
+      replay_config: "outputs/replay_configs/2026-05-30_car_static_001.yaml"
+      ablation_run_name: "2026-05-30_car_static_001"
+
+  - session_id: "2026-05-30_car_fast_lateral_001"
+    date: "2026-05-30"
+    object: "car"
+    camera:
+      type: "hikrobot"
+      lens: "6mm"
+      intrinsics: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+    mocap:
+      enabled: true
+      csv_path: "FZmotion_Data/raw_csv/2026-05-30_car_fast_lateral_001.csv"
+      camera_rigid: "hik_rigid"
+      object_rigid: "car_rigid"
+    capture:
+      root: "captures/2026-05-30/2026-05-30_car_fast_lateral_001"
+      images_dir: "images"
+      videos_dir: "videos"
+      metadata: "capture_metadata.json"
+    motion:
+      type: "lateral"
+      speed_level: "fast"
+      occlusion: "none"
+      lighting: "normal"
+      background: "lab"
+    outputs:
+      auto_labels: "outputs/auto_labels/2026-05-30_car_fast_lateral_001"
+      dataset_split: "test"
+      replay_config: "outputs/replay_configs/2026-05-30_car_fast_lateral_001.yaml"
+      ablation_run_name: "2026-05-30_car_fast_lateral_001"
