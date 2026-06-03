@@ -1,12 +1,21 @@
-# Process Single Session
+# 单个 Session 处理流程
 
-`scripts/process_single_session.py` is a lightweight orchestrator for one capture session. It connects the existing session manifest, capture quality check, mocap CSV check, mocap label generation, label visualization, and replay-config generation steps.
+`scripts\process_single_session.py` 是一个轻量级编排脚本，用来按顺序处理一组采集数据。
 
-It does not train a model and does not run ablation.
+它会把以下步骤串起来：
 
-## Dry Run First
+- session manifest 校验
+- 采集质量检查
+- mocap CSV 质量检查
+- mocap 自动打标签
+- 标签可视化
+- 生成 replay 配置
 
-Dry-run mode validates the manifest entry, resolves paths, writes a process report, and records the commands that would be run. It does not execute data-processing steps.
+它不会训练模型，也不会做 Kalman 消融。
+
+## 先 dry-run
+
+正式处理前先 dry-run。这个模式只检查 manifest、解析路径、写处理报告和命令记录，不真正跑数据处理。
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\process_single_session.py `
@@ -17,15 +26,15 @@ D:\Envs\yolo6d\python.exe scripts\process_single_session.py `
   --dry-run
 ```
 
-With `configs\paths_local.yaml`, the relative `results\...` output directory resolves to:
+使用 `configs\paths_local.yaml` 时，输出目录会解析为：
 
 ```text
 G:\YOLO6D_Car_Data\results\session_processing\2026-05-30_car_static_001
 ```
 
-## Formal Run
+## 正式运行
 
-After capture images and mocap CSV are present, run without `--dry-run`:
+当图像和 mocap CSV 都准备好后，去掉 `--dry-run`：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\process_single_session.py `
@@ -35,48 +44,55 @@ D:\Envs\yolo6d\python.exe scripts\process_single_session.py `
   --output-dir results\session_processing\2026-05-30_car_static_001
 ```
 
-The script stops at the first failed step and records stdout/stderr in `process_summary.json`.
+脚本会在第一处失败步骤停止，并把 stdout / stderr 写入 `process_summary.json`。
 
-## Steps
+## 处理步骤
 
-1. Validate the session manifest with `scripts/manage_sessions.py --action validate`.
-2. Check capture quality with `scripts/check_capture_quality.py`.
-3. Check mocap CSV quality with `scripts/check_mocap_csv.py`.
-4. Generate mocap-assisted labels with `scripts/generate_mocap_labels.py`.
-5. Visualize labels with `scripts/visualize_auto_labels.py`.
-6. Generate one replay config from the session manifest.
+1. 调用 `scripts/manage_sessions.py --action validate` 校验 session manifest。
+2. 调用 `scripts/check_capture_quality.py` 检查采集质量。
+3. 调用 `scripts/check_mocap_csv.py` 检查 mocap CSV。
+4. 调用 `scripts/generate_mocap_labels.py` 生成标签。
+5. 调用 `scripts/visualize_auto_labels.py` 可视化标签。
+6. 根据 session manifest 生成 replay 配置。
 
-If `mocap.enabled` is false, mocap-dependent steps are skipped with a recorded reason.
+如果 `mocap.enabled=false`，和 mocap 相关的步骤会被跳过，并在报告里记录原因。
 
-## Outputs
+## 输出目录
 
 ```text
-results\session_processing\<session_id>\
+results\session_processing\<session_id>
 ├── process_summary.json
 ├── process_report.md
 ├── generated_commands.md
-├── capture_quality\
-├── mocap_quality\
-└── label_visualization\
+├── capture_quality
+├── mocap_quality
+└── label_visualization
 ```
 
-## Important Notes
+## 注意事项
 
-- The script does not train YOLO Pose.
-- The script does not run Kalman ablation.
-- The script does not modify source images, labels, or mocap CSV files.
-- The generated label command currently uses the session `camera.intrinsics` field as the `generate_mocap_labels.py --config` value. If a real session needs a separate labeling project YAML, update the manifest convention before formal processing.
-- Replay config generation writes the session `outputs.replay_config` path only during a formal run.
+- 这个脚本不训练 YOLO Pose。
+- 这个脚本不运行 Kalman ablation。
+- 这个脚本不会修改原始图片、标签或 mocap CSV。
+- 当前标签生成命令会使用 session 中的配置字段；真实实验时要确认它指向的是完整的项目 YAML，而不是单纯的内参 YAML。
+- replay 配置只会在正式运行时写出。
 
-## Troubleshooting
+## 常见问题
 
-- Capture quality fails: check `capture.root`, `images_dir`, and `capture_index.csv`.
-- Mocap CSV fails: check `mocap.csv_path`, `camera_rigid`, and `object_rigid`.
-- Label generation fails: check that the label config is a full project YAML accepted by `generate_mocap_labels.py`.
-- Label visualization fails: check that `outputs.auto_labels` contains `labels_yolo_pose/*.txt` and that image stems match label stems.
-## Code Reading Notes
+采集质量检查失败：
 
-- 入口脚本是 `scripts/process_single_session.py`。
-- 它是胶水层，不实现新算法，只按顺序调用已有脚本。
-- `--dry-run` 是回实验室前最安全的检查方式。
-- 正式运行会在某一步失败时停止，并把 stdout/stderr 写入 `process_summary.json`。
+- 检查 `capture.root`、`images_dir` 和 `capture_index.csv`。
+
+mocap CSV 检查失败：
+
+- 检查 `mocap.csv_path`、`camera_rigid` 和 `object_rigid`。
+
+标签生成失败：
+
+- 检查传给 `generate_mocap_labels.py --config` 的配置是否完整。
+
+标签可视化失败：
+
+- 检查 `outputs.auto_labels` 中是否存在 `labels_yolo_pose/*.txt`。
+- 检查图片文件名和标签文件名是否匹配。
+

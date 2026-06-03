@@ -1,19 +1,16 @@
-# Register Capture Session
+# 注册采集 Session
 
-`scripts\register_capture_session.py` converts a capture folder into a
-`sessions:` entry for the session manifest.
+`scripts\register_capture_session.py` 用来把一个采集目录转换成 session manifest 里的 `sessions:` 条目。
 
-It is useful after auto capture creates:
+它适合在采集完成后使用，例如已经有：
 
 ```text
-G:\YOLO6D_Car_Data\captures\<date>\<session_name>\
+G:\YOLO6D_Car_Data\captures\<date>\<session_name>
 ```
 
-The script reads the folder path and optional `capture_metadata.json`, fills the
-standard manifest fields, and can either preview the YAML block or append it to
-an existing manifest.
+脚本会读取目录路径和可选的 `capture_metadata.json`，自动填充标准字段。你可以先预览 YAML，也可以追加写入已有 manifest。
 
-## Dry-Run Preview
+## 预览模式
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\register_capture_session.py ^
@@ -27,16 +24,16 @@ D:\Envs\yolo6d\python.exe scripts\register_capture_session.py ^
   --dry-run
 ```
 
-This prints:
+这个命令只打印：
 
 ```yaml
 sessions:
   - session_id: ...
 ```
 
-No file is modified.
+不会修改文件。
 
-## Append to Manifest
+## 追加到 Manifest
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\register_capture_session.py ^
@@ -51,29 +48,28 @@ D:\Envs\yolo6d\python.exe scripts\register_capture_session.py ^
   --append
 ```
 
-Before writing, the script:
+正式写入前，脚本会：
 
-- checks that `session_id` does not already exist,
-- validates the generated entry with `session_manifest.py`,
-- creates a timestamped manifest backup.
+- 检查 `session_id` 是否已经存在。
+- 校验生成的条目是否合法。
+- 自动创建带时间戳的 manifest 备份。
 
-## Useful Options
+## 常用参数
 
-- `--lens 6mm`
-- `--intrinsics outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml`
-- `--mocap-csv FZmotion_Data\raw_csv\<session_id>.csv`
-- `--camera-rigid hik_rigid`
-- `--object-rigid car_rigid`
-- `--occlusion none`
-- `--lighting normal`
-- `--background lab`
+```text
+--lens 6mm
+--intrinsics outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml
+--mocap-csv FZmotion_Data\raw_csv\<session_id>.csv
+--camera-rigid hik_rigid
+--object-rigid car_rigid
+--occlusion none
+--lighting normal
+--background lab
+```
 
-If mocap is not ready yet, leave `--mocap-csv` unset. The script writes TODO
-fields and sets `mocap.enabled=false`.
+如果 mocap CSV 还没准备好，可以先不填 `--mocap-csv`。脚本会把 mocap 标记为未启用，后续再补。
 
-## After Registering
-
-Run:
+## 注册后检查
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
@@ -82,4 +78,10 @@ D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
   --action validate
 ```
 
-Then update mocap paths and rigid body names when the FzMotion CSV is available.
+等 FzMotion CSV 到位后，再补充：
+
+- `mocap.csv_path`
+- `camera_rigid`
+- `object_rigid`
+- `camera.intrinsics`
+

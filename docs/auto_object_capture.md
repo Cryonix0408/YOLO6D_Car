@@ -1,146 +1,109 @@
-# Auto Object Capture
+# 自动采集小车图像
 
-This script helps one person collect small-car images without pressing a save
-key for every sample. You move or place the car; the program saves only when
-the view is clear, stable, and sufficiently different from the last saved
-sample.
+`scripts\capture_object_samples.py` 用于旧版 D455 / webcam 自动采集。它会根据画面变化、清晰度和时间间隔自动保存样本。
 
-## Why Auto Capture
+重要提醒：海康 MV-CS016-10UC 的连续帧采集请优先使用 `scripts\collect_hikvision_sequence.py`。`capture_object_samples.py` 中虽然能识别 `hikrobot` 配置名，但海康自动采集入口不是当前主线。
 
-Manual capture is awkward when one person must move the car, check framing, and
-press a key. Auto capture makes the computer wait for a good moment and reduces
-duplicate images from the same pose.
+## 适用场景
 
-## How To Collect Alone
+- D455 静态或慢速采集。
+- Webcam 调试。
+- 无相机 dry-run 检查流程。
+- 自动筛掉重复角度和模糊图像。
 
-1. Start the script.
-2. Move or place the car in a new pose.
-3. Hold still for a short moment.
-4. Wait for the script to auto-save.
-5. Move the car again.
+## 输出内容
 
-The `s` key still force-saves the current frame, but it is only a backup.
-
-## Auto-Save Logic
-
-Each frame is checked for:
-
-- blur score above `capture.blur_threshold`,
-- enough time since the last save,
-- stable image over `stable_frames_required` frames,
-- enough difference from the last saved image,
-- not paused,
-- target sample count not reached.
-
-Reject reasons include:
-
-- `blur_too_low`
-- `too_soon`
-- `not_stable`
-- `too_similar_to_last_saved`
-- `paused`
-- `target_reached`
-
-## Duplicate Prevention
-
-After one sample is saved, the script enters `waiting_for_scene_change`.
-It will not save again until the current frame differs enough from the last
-saved frame. This prevents many copies of the same car pose.
-
-## Key Settings
-
-- `target_samples`: total number of desired images.
-- `blur_threshold`: increase if blurry images are being saved; decrease if the
-  script never saves in dim lighting.
-- `min_time_between_samples_s`: increase if saving is too frequent.
-- `stable_frames_required`: increase if frames are saved while your hand is
-  still moving.
-- `frame_difference_threshold` and `min_scene_change_score`: increase if
-  duplicate poses are saved; decrease if new poses are not accepted.
-
-## Validate Config
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py ^
-  --config configs\object_capture_auto.yaml ^
-  --paths-config configs\paths_local.yaml ^
-  --validate-config
-```
-
-This does not open the camera.
-
-## Dry-Run
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py ^
-  --config configs\object_capture_auto.yaml ^
-  --paths-config configs\paths_local.yaml ^
-  --dry-run ^
-  --max-frames 20
-```
-
-Dry-run uses synthetic frames, prints decisions, and does not save images.
-
-## Formal Run
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py ^
-  --config configs\object_capture_auto.yaml ^
-  --paths-config configs\paths_local.yaml
-```
-
-Use `--overwrite` only when you intentionally want to reuse an existing session
-directory. By default, a non-empty session directory is protected.
-
-## Output Structure
-
-Outputs are resolved through `configs\paths_local.yaml` and go under:
+典型输出目录：
 
 ```text
-G:\YOLO6D_Car_Data\captures\<date>\<session_name>\
+captures\<date>\<session_name>
+├── images
+├── previews
+├── metadata
+├── capture_index.csv
+├── capture_metadata.json
+└── capture_report.md
 ```
 
-Structure:
+## 笔记本采集建议
+
+如果在采集笔记本上运行，建议写到：
 
 ```text
-images\
-depth\
-previews\
-metadata\
-capture_index.csv
-capture_metadata.json
-capture_report.md
+D:\CaptureData\<session>
 ```
 
-If `save_depth=false`, the `depth` directory and depth files are not written.
+并使用：
 
-## After Capture
+```powershell
+python .\scripts\capture_object_samples.py --config .\configs\object_capture_auto.yaml --paths-config .\configs\paths_laptop.yaml --output-dir D:\CaptureData\car_static_001
+```
 
-1. Sync the capture folder to the workstation if collected on a laptop.
-2. Put the matching FzMotion CSV under `FZmotion_Data`.
-3. Update the session manifest.
-4. Run mocap label generation.
-5. Build the YOLO Pose dataset.
+## 主机环境示例
 
-## Troubleshooting
+如果在主机上运行：
 
-- Never saves: lower `blur_threshold`, lower scene-change thresholds, or hold
-  the car still longer.
-- Saves too often: raise `min_time_between_samples_s`,
-  `frame_difference_threshold`, or `min_scene_change_score`.
-- Blurry images: improve lighting, refocus, or raise `blur_threshold`.
-- Camera cannot open: check RealSense Viewer or other programs are not using
-  the camera; verify USB 3.0 connection.
-- Output directory exists: change `session_name` or pass `--overwrite` when
-  intentionally continuing that session.
-## Code Reading Notes
+```powershell
+D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py --config configs\object_capture_auto.yaml --paths-config configs\paths_local.yaml
+```
 
-- 核心脚本是 `scripts/capture_object_samples.py`。
-- 自动保存条件主要看 blur_score、scene_change、stable_frame_count 和 waiting_for_scene_change。
-- `s` 键是备用强制保存，不是主要流程。
+## dry-run 检查
 
-如果一直不保存：
+不连接真实相机，只跑自动采集逻辑：
 
-- 降低 `blur_threshold` 或检查对焦/光照。
-- 降低 `min_scene_change_score`。
-- 确认画面已经稳定达到 `stable_frames_required`。
+```powershell
+python .\scripts\capture_object_samples.py --config .\configs\object_capture_auto.yaml --paths-config .\configs\paths_laptop.yaml --dry-run --max-frames 20
+```
+
+## 自动保存逻辑
+
+程序会检查：
+
+- 是否距离上一张保存样本足够久。
+- 当前图像是否足够清晰。
+- 当前画面是否和上一张差异足够大。
+- 小车位置、尺度或场景是否变化明显。
+
+如果画面变化太小，程序会继续等待，不会重复保存几乎一样的图。
+
+## 配置重点
+
+`configs\object_capture_auto.yaml` 中常用字段：
+
+- `capture.target_samples`：目标采集张数。
+- `capture.min_time_between_samples_s`：两次保存之间最小时间间隔。
+- `capture.blur_threshold`：清晰度阈值。
+- `capture.min_position_change_px`：位置变化阈值。
+- `capture.save_preview`：是否保存预览图。
+- `output.root`：输出根目录。
+
+## 和 mocap 的关系
+
+该脚本只负责采集图片和 metadata，不直接生成 mocap 标签。后续需要：
+
+1. 保存对应 FzMotion CSV。
+2. 检查 CSV。
+3. 用 `generate_mocap_labels.py` 打标签。
+4. 用 `visualize_auto_labels.py` 抽查标签质量。
+
+## 常见问题
+
+输出目录已存在：
+
+- 换一个 session 名。
+- 或确认安全后加 `--overwrite`。
+
+保存太慢：
+
+- 降低 `min_time_between_samples_s`。
+- 降低场景变化阈值。
+
+保存太重复：
+
+- 提高 `min_position_change_px`。
+- 提高 `min_scene_change_score`。
+
+海康相机不要用这个脚本作为主采集入口：
+
+- 海康连续帧采集请用 `scripts\collect_hikvision_sequence.py`。
+

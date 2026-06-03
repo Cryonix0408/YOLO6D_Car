@@ -1,72 +1,107 @@
-# Experiment Day Checklist Workflow
+# 实验日检查清单流程
 
-Use `scripts/generate_experiment_day_checklist.py` before going to the lab. It creates a printable Markdown checklist for hardware, software, calibration, capture sessions, and end-of-day backup checks.
+本文档用于实验当天快速确认：硬件、路径、采集、同步、质检是否都准备好。
 
-The script does not collect data, train models, or generate large files.
+## 实验前检查
 
-## Planned Sessions Template
+确认硬件：
 
-Edit:
+- 海康 MV-CS016-10UC
+- 对应镜头，例如 8mm
+- USB3.0 数据线
+- 小车和电池
+- 动捕球
+- FzMotion 系统
+- 采集笔记本电源
+- 主机共享盘 `Z:\` 可访问
+
+确认路径：
+
+```powershell
+Test-Path D:\YOLO6D_Car
+Test-Path D:\CaptureData
+Test-Path Z:\captures
+```
+
+确认项目：
+
+```powershell
+cd D:\YOLO6D_Car
+git status
+```
+
+## 相机预览
+
+先不采集，只看画面：
+
+```powershell
+python .\scripts\test_hikvision_camera.py --mvs-python-path "E:\MVS\Development\Samples\Python\MvImport" --frame-rate 60 --exposure-time-us 5000 --gain-db 6
+```
+
+检查：
+
+- 画面亮度
+- 噪点
+- 视野范围
+- 焦点
+- 帧率
+
+## 采集 session
+
+示例：
+
+```powershell
+python .\scripts\collect_hikvision_sequence.py --output-dir D:\CaptureData\2026-XX-XX_car_fast_lateral_001 --duration 30 --fps 60 --exposure-us 5000 --gain 6 --width 1440 --height 1080 --preview --preview-before-start
+```
+
+每组采集后检查：
+
+```powershell
+dir D:\CaptureData\2026-XX-XX_car_fast_lateral_001
+dir D:\CaptureData\2026-XX-XX_car_fast_lateral_001\images
+```
+
+## FzMotion CSV
+
+每组 session 的 CSV 建议保存为：
 
 ```text
-configs\planned_sessions_template.yaml
+D:\CaptureData\FZmotion_Data\<session_id>.csv
 ```
 
-Each planned session can include:
+至少记录：
 
-- `session_id`
-- `motion_type`
-- `speed_level`
-- `camera_type`
-- `lens`
-- `camera_rigid`
-- `object_rigid`
-- `lighting`
-- `background`
-- `notes`
+- session 名
+- 相机刚体名
+- 小车刚体名
+- 采集开始和结束时间
+- 是否有遮挡、灯光变化或异常
 
-The script also accepts a `sessions:` list if you want to reuse a session-manifest-like file.
-
-## Generate Checklist
+## 采集质量检查
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\generate_experiment_day_checklist.py `
-  --date 2026-05-30 `
-  --planned-sessions configs\planned_sessions_template.yaml `
-  --paths-config configs\paths_local.yaml `
-  --output docs\experiment_day_2026-05-30.md
+python .\scripts\check_capture_quality.py --capture-root D:\CaptureData\<session_id> --output-dir D:\CaptureData\results\capture_quality\<session_id> --plot
 ```
 
-## What It Includes
-
-- Hardware checklist:
-  D455, Hikrobot camera, 6mm / 8mm lens, calibration board, small car, mocap markers, lighting, power, USB, and storage.
-- Software checklist:
-  readiness check, validate-config, auto capture dry-run, mocap CSV path, and sync script.
-- Calibration tasks:
-  6mm and 8mm Hikrobot lens checks.
-- Planned session table:
-  static, slow lateral, fast lateral, approach, receding, rotation, and occlusion sessions.
-- Per-session notes blocks.
-- End-of-day checks:
-  capture quality, mocap quality, session registration, sync, and backup.
-
-## After the Lab Day
-
-For each completed session, run:
+## 同步前扫描
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_capture_quality.py --capture-root captures\<date>\<session_id> --paths-config configs\paths_local.yaml --output-dir results\capture_quality\<session_id> --plot
+python .\scripts\sync_capture_batch_to_host.py --local-root D:\CaptureData --host-root Z:\captures --plan-only
 ```
+
+## 正式同步
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\<session_id>.csv --paths-config configs\paths_local.yaml --camera-rigid <camera_rigid> --object-rigid car_rigid --output-dir results\mocap_quality\<session_id> --plot
+python .\scripts\sync_capture_batch_to_host.py --local-root D:\CaptureData --host-root Z:\captures --verify
 ```
 
-Then register the session into the session manifest and continue with single-session processing.
-## Code Reading Notes
+## 实验结束后
 
-- checklist 生成器是 `scripts/generate_experiment_day_checklist.py`。
-- 它只写 Markdown，不连接硬件，不采集数据。
-- 计划 session 模板是 `configs/planned_sessions_template.yaml`。
-- 真实执行命令包见 `docs/lab_execution_plan.md` 和 `docs/lab_commands_generated.md`。
+确认：
+
+- 所有 session 都在 `D:\CaptureData`。
+- 所有 CSV 都已保存。
+- `Z:\captures` 中能看到同步结果。
+- 重要数据主机端也能看到。
+- 记录当天异常，例如掉帧、光照不足、动捕丢刚体。
+

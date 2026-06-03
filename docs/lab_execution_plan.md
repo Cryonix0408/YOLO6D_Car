@@ -1,204 +1,139 @@
-# Lab Execution Plan
+# 实验室执行计划
 
-This document is the real-lab execution package for YOLO6D_Car. It assumes code is on `D:\Research\YOLO6D_Car`, Python is `D:\Envs\yolo6d\python.exe`, and large data goes to `G:\YOLO6D_Car_Data`.
+本文档是实验当天的执行包。目标不是一上来训练大模型，而是先跑通一条小而可靠的真实数据闭环。
 
-Do not do full-scale training on the first lab pass. The goal is to produce a small, verified real-data loop.
+## 前 10 分钟检查
 
-## A. First 10 Minutes
+硬件：
 
-Hardware and room:
+- [ ] 海康 MV-CS016-10UC 已连接。
+- [ ] 8mm 镜头已装好、拧紧、清洁。
+- [ ] 如果使用 6mm 镜头，确认对应镜头和内参。
+- [ ] 小车可运行。
+- [ ] 动捕球贴牢且可见。
+- [ ] FzMotion 系统正常。
+- [ ] 光照稳定。
+- [ ] 电源、USB3.0、延长线、支架都固定好。
+- [ ] 笔记本电量够，最好接电源。
+- [ ] `Z:\` 主机共享盘可访问。
 
-- [ ] Intel RealSense D455 connected.
-- [ ] Hikrobot MV-CS016-10UC connected.
-- [ ] 6mm lens present, clean, and tightened.
-- [ ] 8mm lens present, clean, and tightened.
-- [ ] Calibration board present.
-- [ ] Small car present.
-- [ ] Mocap markers attached and visible.
-- [ ] Fill light / room light stable.
-- [ ] Power / USB / hub / cable routing checked.
-- [ ] G drive free space checked.
-- [ ] ToDesk / remote connection ready if needed.
-- [ ] Sync plan confirmed.
-
-Software:
+软件：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_project_readiness.py --paths-config configs\paths_local.yaml
+cd D:\YOLO6D_Car
+git status
+Test-Path D:\CaptureData
+Test-Path Z:\captures
 ```
+
+相机预览：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py --config configs\object_capture_auto.yaml --paths-config configs\paths_local.yaml --validate-config
+python .\scripts\test_hikvision_camera.py --mvs-python-path "E:\MVS\Development\Samples\Python\MvImport" --frame-rate 60 --exposure-time-us 5000 --gain-db 6
 ```
+
+确认：
+
+- [ ] 画面亮度能看清小车。
+- [ ] 噪点不过分。
+- [ ] 小车运动区域在画面内。
+- [ ] 帧率接近设定值。
+- [ ] FzMotion 中相机刚体名和小车刚体名确认。
+
+## 是否需要先标定
+
+以下情况需要重新标定内参：
+
+- 换了镜头。
+- 重新对焦。
+- 镜头松动后重新安装。
+- 分辨率改变。
+
+海康 8mm 标定：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py --config configs\object_capture_auto.yaml --paths-config configs\paths_local.yaml --dry-run --max-frames 20
+python .\scripts\calibrate_hik_camera.py --config .\configs\calibration_hik_8mm.yaml --paths-config .\configs\paths_laptop.yaml --mode capture_and_calibrate
 ```
 
-Before collecting data, confirm:
+如果只做采集，不在笔记本上处理训练，可以先保证采集保存完整，标定结果后续同步到主机。
 
-- [ ] FzMotion is running.
-- [ ] Camera rigid body name is confirmed, for example `hik_rigid` or `d455_rigid`.
-- [ ] Car rigid body name is confirmed, for example `car_rigid`.
-- [ ] FzMotion CSV will be saved under `G:\YOLO6D_Car_Data\FZmotion_Data\raw_csv`.
+## 第一批 session 建议
 
-## B. Calibration First
+最低可行组合：
 
-Do Hikrobot lens calibration before real Hikrobot data collection. Do not mix 6mm and 8mm intrinsics.
+| session | 运动 | 速度 | 用途 |
+| --- | --- | --- | --- |
+| `car_static_001` | 静止 | static | 检查时间戳和 PnP 基准 |
+| `car_slow_lateral_001` | 横向移动 | slow | 容易成功的运动样本 |
+| `car_fast_lateral_001` | 横向快速移动 | fast | Kalman 压力测试 |
 
-### 6mm
+效果更好的组合：
+
+| session | 运动 | 速度 | 用途 |
+| --- | --- | --- | --- |
+| `car_static_001` | 静止 | static | 基准 |
+| `car_slow_lateral_001` | 横向 | slow | 稳定运动 |
+| `car_fast_lateral_001` | 横向 | fast | 快速运动 |
+| `car_approach_001` | 靠近相机 | medium | 尺度变化 |
+| `car_receding_001` | 远离相机 | medium | 远距离表现 |
+| `car_rotation_001` | 转向/绕圈 | medium | yaw 和旋转稳定性 |
+| `car_occlusion_001` | 局部遮挡 | slow | 鲁棒性 |
+
+## 单个 session 操作
+
+1. FzMotion 开始记录。
+2. 采集脚本开始记录。
+3. 小车按指定方式运动。
+4. 停止采集脚本。
+5. 停止 FzMotion 记录并导出 CSV。
+6. 检查图片数量和 CSV 是否存在。
+7. 记录异常情况。
+
+采集命令示例：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_6mm.yaml --paths-config configs\paths_local.yaml --validate-config
+python .\scripts\collect_hikvision_sequence.py --output-dir D:\CaptureData\2026-XX-XX_car_fast_lateral_001 --duration 30 --fps 60 --exposure-us 5000 --gain 6 --width 1440 --height 1080 --preview --preview-before-start
 ```
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_6mm.yaml --paths-config configs\paths_local.yaml --mode capture_and_calibrate
-```
-
-Expected output:
+CSV 建议保存到：
 
 ```text
-G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml
+D:\CaptureData\FZmotion_Data\2026-XX-XX_car_fast_lateral_001.csv
 ```
 
-### 8mm
+## 采集后检查
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_8mm.yaml --paths-config configs\paths_local.yaml --validate-config
+dir D:\CaptureData\2026-XX-XX_car_fast_lateral_001
+dir D:\CaptureData\2026-XX-XX_car_fast_lateral_001\images
 ```
+
+采集质量检查：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_8mm.yaml --paths-config configs\paths_local.yaml --mode capture_and_calibrate
+python .\scripts\check_capture_quality.py --capture-root D:\CaptureData\2026-XX-XX_car_fast_lateral_001 --output-dir D:\CaptureData\results\capture_quality\2026-XX-XX_car_fast_lateral_001 --plot
 ```
 
-Expected output:
+## 同步
 
-```text
-G:\YOLO6D_Car_Data\outputs\calibration\hik_8mm\camera_intrinsics_hik_8mm.yaml
-```
-
-Reprojection error guidance:
-
-- Good: below about `0.5 px`.
-- Usable first pass: around `0.5-1.0 px`, if visual undistortion looks stable.
-- Suspicious: above `1.0 px`, especially if per-view errors are uneven.
-
-If calibration fails:
-
-- Check square size in config.
-- Make sure the correct lens config is used.
-- Improve lighting and focus.
-- Move the board across center/corners/near/far/tilted poses.
-- Do not continue Hikrobot collection with questionable intrinsics unless the goal is only a pipeline smoke test.
-
-## C. First Real Session Plan
-
-Use `configs/real_sessions_first_batch_template.yaml` and replace `TODO_DATE` with the real date before registering final sessions.
-
-| session_id | camera | lens | motion_type | speed | mocap | expected samples | purpose | split |
-|---|---|---|---|---|---|---:|---|---|
-| `TODO_DATE_car_static_001` | hikrobot | 6mm | static | static | yes | 100-200 | timestamp alignment and PnP baseline | train |
-| `TODO_DATE_car_slow_lateral_001` | hikrobot | 6mm | lateral | slow | yes | 200-400 | easy moving sequence | train |
-| `TODO_DATE_car_slow_approach_001` | hikrobot | 8mm | approach | slow | yes | 200-400 | scale/depth variation | train |
-| `TODO_DATE_car_slow_receding_001` | hikrobot | 8mm | receding | slow | yes | 200-400 | far-distance behavior | val |
-| `TODO_DATE_car_rotation_001` | hikrobot | 6mm | rotation | medium | yes | 200-400 | rotation vector stability | train |
-| `TODO_DATE_car_fast_lateral_001` | hikrobot | 6mm | lateral | fast | yes | 300-600 | Kalman/reliability stress test | test |
-| `TODO_DATE_car_occlusion_001` | hikrobot | 6mm | occlusion | slow | yes | 150-300 | partial visibility test | test |
-
-For the first return to lab, minimum viable target is 3 usable sessions: static, slow lateral, fast lateral.
-
-## D. Standard Session Flow
-
-For each session:
-
-1. Auto capture.
-2. Capture quality check.
-3. Save and verify FzMotion CSV.
-4. Mocap CSV quality check.
-5. Register session.
-6. Generate mocap labels.
-7. Visualize labels.
-8. Generate replay config.
-9. Run `process_single_session.py`.
-10. Prepare dataset after labels are visually verified.
-
-## E. Commands
-
-Generate the full command sheet:
+先扫描：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\print_lab_commands.py --paths-config configs\paths_local.yaml --sessions configs\real_sessions_first_batch_template.yaml --output docs\lab_commands_generated.md
+python .\scripts\sync_capture_batch_to_host.py --local-root D:\CaptureData --host-root Z:\captures --plan-only
 ```
 
-Example per-session commands:
+正式同步：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\capture_object_samples.py --config configs\object_capture_auto.yaml --paths-config configs\paths_local.yaml
+python .\scripts\sync_capture_batch_to_host.py --local-root D:\CaptureData --host-root Z:\captures --verify
 ```
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\check_capture_quality.py --capture-root captures\TODO_DATE\TODO_DATE_car_static_001 --paths-config configs\paths_local.yaml --output-dir results\capture_quality\TODO_DATE_car_static_001 --plot
-```
+## 实验当天不要做
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\TODO_DATE_car_static_001.csv --paths-config configs\paths_local.yaml --camera-rigid hik_rigid --object-rigid car_rigid --output-dir results\mocap_quality\TODO_DATE_car_static_001 --plot
-```
+- 不要在没看 overlay 前大规模训练。
+- 不要混用 6mm 和 8mm 内参。
+- 不要采集没有命名的 session。
+- 不要只保存图像忘记保存 FzMotion CSV。
+- 不要把大数据提交到 Git。
+- 不要在相机参数没稳定时连续采很多组。
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\generate_mocap_labels.py --config outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml --paths-config configs\paths_local.yaml --samples-dir captures\TODO_DATE\TODO_DATE_car_static_001 --output-dir outputs\auto_labels\TODO_DATE_car_static_001 --csv-path FZmotion_Data\raw_csv\TODO_DATE_car_static_001.csv --save-overlays
-```
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\visualize_auto_labels.py --labels-root outputs\auto_labels\TODO_DATE_car_static_001 --images-root captures\TODO_DATE\TODO_DATE_car_static_001\images --paths-config configs\paths_local.yaml --output-dir results\label_visualization\TODO_DATE_car_static_001 --max-samples 100
-```
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\process_single_session.py --session-id TODO_DATE_car_static_001 --manifest configs\real_sessions_first_batch_template.yaml --paths-config configs\paths_local.yaml --output-dir results\session_processing\TODO_DATE_car_static_001
-```
-
-Dataset and model management:
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_sessions.py --manifest configs\real_sessions_first_batch_template.yaml --paths-config configs\paths_local.yaml --action validate
-```
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_datasets.py --manifest configs\dataset_manifest_template.yaml --paths-config configs\paths_local.yaml --action generate-data-yaml
-```
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_models.py --registry configs\model_registry_template.yaml --paths-config configs\paths_local.yaml --action print-train-command --model-id car_pose_12pts_v1_yolov8n_pose
-```
-
-## F. Backup and Sync
-
-Back up these after the experiment:
-
-- `G:\YOLO6D_Car_Data\captures`
-- `G:\YOLO6D_Car_Data\FZmotion_Data`
-- `G:\YOLO6D_Car_Data\outputs\auto_labels`
-- `G:\YOLO6D_Car_Data\results`
-- `G:\YOLO6D_Car_Data\logs`
-
-Laptop-to-host example:
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\sync_capture_to_host.py --local-root D:\CaptureData\TODO_DATE_car_static_001 --host-root G:\YOLO6D_Car_Data\captures --experiment TODO_DATE_car_static_001 --verify
-```
-
-Mapped drive example:
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\sync_capture_to_host.py --local-root D:\CaptureData\TODO_DATE_car_static_001 --host-root Z:\captures --experiment TODO_DATE_car_static_001 --verify
-```
-
-## G. Do Not Do on Experiment Day
-
-- Do not launch full-scale training before checking overlays.
-- Do not train on labels that have not passed visual inspection.
-- Do not mix 6mm and 8mm intrinsics.
-- Do not collect sessions without metadata.
-- Do not commit large files, weights, captures, videos, `.bag`, `.npy`, or `.npz` into Git.
-- Do not overwrite calibration results unless intentionally using `--overwrite`.
-- Do not keep collecting if mocap rigid body names are wrong.

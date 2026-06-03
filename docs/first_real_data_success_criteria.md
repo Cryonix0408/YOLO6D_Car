@@ -1,57 +1,65 @@
-# First Real Data Success Criteria
+# 第一批真实数据成功标准
 
-This checklist defines what counts as a successful first real lab data run for YOLO6D_Car.
+本文档用于判断第一批真实采集数据是否“可以进入训练/实验”。
 
-## Minimum Success
+## 采集成功
 
-- [ ] At least one Hikrobot lens is calibrated successfully: 6mm or 8mm.
-- [ ] Calibration output exists:
-  - `G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml`, or
-  - `G:\YOLO6D_Car_Data\outputs\calibration\hik_8mm\camera_intrinsics_hik_8mm.yaml`
-- [ ] At least 3 real capture sessions are completed.
-- [ ] Each completed session has:
-  - `images\`
-  - `capture_metadata.json`
-  - `capture_index.csv`
-  - matching FzMotion CSV under `G:\YOLO6D_Car_Data\FZmotion_Data\raw_csv`
-- [ ] `scripts/check_capture_quality.py` result is `PASS` or `WARNING` for each usable session.
-- [ ] `scripts/check_mocap_csv.py` result is `PASS` or `WARNING` for each usable mocap CSV.
-- [ ] Mocap-assisted labels can be generated for at least one session.
-- [ ] `scripts/visualize_auto_labels.py` overlays look correct by visual inspection.
-- [ ] A YOLO Pose `dataset.yaml` can be generated.
-- [ ] A small training command can be printed, or one tiny training smoke run can be started intentionally.
-- [ ] A replay config can be generated for at least one real session.
-- [ ] One real session can run replay.
-- [ ] Raw / fixed KF / reliability-aware KF ablation can run on one real session.
+一组 session 至少应包含：
 
-## Strong Success
+- `images/` 或连续帧图像目录
+- `camera_timestamps.csv`
+- `config.yaml`
+- 对应 FzMotion CSV
+- session 名称清楚，能看出日期、距离、背景、光照或运动类型
 
-- [ ] Both 6mm and 8mm Hikrobot lenses are calibrated.
-- [ ] At least these 3 session types are usable:
-  - static
-  - slow lateral
-  - fast lateral
-- [ ] At least one train split and one test split session are available.
-- [ ] Label visualization shows all or most 12 keypoints in plausible positions.
-- [ ] PnP pose is numerically stable for a short real replay.
-- [ ] Fixed KF and reliability-aware KF produce CSV outputs with filtered pose columns.
-- [ ] `scripts/evaluate_pose_results.py` can compare raw vs filtered smoothness.
+## 相机成功
 
-## Not Required on First Day
+海康相机采集应满足：
 
-- Full-scale YOLO Pose training.
-- Final paper-quality ablation.
-- Learned uncertainty or advanced dynamic filtering.
-- Perfect calibration for both lenses.
-- Perfect labels for every session.
+- 图像不过曝。
+- 图像不是严重欠曝。
+- 运动目标没有完全糊成一团。
+- 帧率接近设定值。
+- `camera_timestamps.csv` 时间戳连续。
+- `config.yaml` 记录了曝光、增益、fps、分辨率。
 
-## Stop Conditions
+## Mocap 成功
 
-Pause data collection and fix the issue if:
+FzMotion CSV 应满足：
 
-- Calibration reprojection error is clearly high or unstable.
-- Camera/lens configuration is mixed, for example 6mm captures use 8mm intrinsics.
-- FzMotion rigid body names do not match the manifest.
-- Capture images are blurry or repeated.
-- Label overlays are visibly shifted, mirrored, or scaled incorrectly.
-- Session metadata is missing.
+- 能被 `check_mocap_csv.py` 识别。
+- 包含相机刚体。
+- 包含小车刚体。
+- 有效帧数量足够。
+- 没有大面积 NaN。
+- 时间范围覆盖图像采集时间。
+
+## 标签成功
+
+自动标签应满足：
+
+- `saved_labels` 大于 0。
+- overlay 中关键点贴在小车上。
+- 线框没有整体飞走。
+- 小车不同距离、不同角度下标签都基本合理。
+- 可视化报告没有大量缺图或缺标签。
+
+## 训练成功
+
+训练初版模型应满足：
+
+- `best.pt` 生成。
+- loss 正常下降。
+- 验证集指标不是全 0。
+- 用真实图片推理能稳定检测小车。
+
+## fast-moving 初版成功
+
+fast-moving 初版不要求完美，但至少应满足：
+
+- 连续帧能稳定采集。
+- 目标进入画面时能被检测。
+- 位姿输出不频繁崩溃。
+- Kalman 后轨迹比 raw 更平滑。
+- 可以保存结果用于后续评估。
+

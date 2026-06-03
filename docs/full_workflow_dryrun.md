@@ -1,34 +1,20 @@
-# Full Workflow Dry-Run
+# 完整流程 Dry-Run
 
-`scripts\dryrun_full_workflow.py` is a pre-lab checklist runner. It verifies
-that the project wiring is coherent before real camera capture, mocap labeling,
-training, replay, and ablation.
+`scripts\dryrun_full_workflow.py` 是实验前的离线检查脚本。它用来确认项目配置、路径和脚本入口是否连得上。
 
-## What It Does Not Do
+它不会连接真实相机，不会连接动捕，不会训练模型，也不会生成大数据。
 
-It does not:
+## 它检查什么
 
-- capture from RealSense or Hikrobot cameras,
-- connect to mocap hardware,
-- train a YOLO model,
-- run large ablations,
-- create large datasets,
-- modify Kalman logic.
+- Python、依赖和导入是否正常。
+- `configs\paths_local.yaml` 是否能解析。
+- session manifest 结构是否正确。
+- dataset manifest 结构是否正确。
+- model registry 结构是否正确。
+- replay、Kalman、训练、归档等命令是否能生成。
+- 可选 smoke test 是否能跑通。
 
-## What It Checks
-
-It checks:
-
-- Python/import/path readiness,
-- `configs\paths_local.yaml`,
-- session manifest structure and planned data paths,
-- dataset manifest structure and planned dataset paths,
-- model registry structure and planned model paths,
-- generated commands for replay, Kalman, ablation, training, and archiving,
-- optional replay smoke tests,
-- optional smoke ablation.
-
-## Basic Dry-Run
+## 基础 dry-run
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\dryrun_full_workflow.py ^
@@ -41,13 +27,13 @@ D:\Envs\yolo6d\python.exe scripts\dryrun_full_workflow.py ^
   --output-dir results\workflow_dryruns\full_workflow_dryrun
 ```
 
-With `--paths-config`, the output directory resolves under:
+输出会解析到：
 
 ```text
 G:\YOLO6D_Car_Data\results\workflow_dryruns\full_workflow_dryrun
 ```
 
-## Dry-Run With Smoke Tests
+## 带 smoke test 的 dry-run
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\dryrun_full_workflow.py ^
@@ -62,9 +48,7 @@ D:\Envs\yolo6d\python.exe scripts\dryrun_full_workflow.py ^
   --output-dir results\workflow_dryruns\full_workflow_dryrun_smoke
 ```
 
-## Output Files
-
-The output directory contains:
+## 输出文件
 
 ```text
 workflow_readiness_summary.json
@@ -73,45 +57,45 @@ workflow_dryrun_report.md
 generated_commands.md
 ```
 
-`workflow_dryrun_report.md` is the human-readable report. It includes:
+其中：
 
-- environment summary,
-- D/G-drive path summary,
-- manifest summaries,
-- Ready / Missing / Placeholder table,
-- next real capture checklist.
+- `workflow_dryrun_report.md` 是给人看的报告。
+- `generated_commands.md` 是后续步骤命令清单。
 
-`generated_commands.md` is the command sheet for the next stages.
+## 状态含义
 
-## Reading the Report
+`Ready`：
 
-Statuses mean:
+- 代码和配置入口存在，可以继续。
 
-- `Ready`: code/config wiring exists and validates.
-- `Missing data expected`: real captures, mocap CSV, labels, or weights are not
-  present yet, which is normal before lab work.
-- `Placeholder`: entry exists, but full algorithmic implementation is reserved.
-- `Pending`: requires hardware, real data, or actual training.
-- `Passed` / `Failed`: an optional smoke command was executed.
+`Missing data expected`：
 
-## Back in the Lab
+- 真实采集数据、CSV、标签或权重还不存在，这是实验前正常情况。
 
-Start with:
+`Placeholder`：
 
-1. create a real `session_id`,
-2. confirm camera intrinsics,
-3. confirm mocap rigid body names,
-4. capture images/videos,
-5. sync captures to G drive,
-6. place FzMotion CSV under `FZmotion_Data`,
-7. update the session manifest,
-8. generate mocap labels,
-9. prepare the dataset,
-10. train YOLO Pose,
-11. archive `best.pt`,
-12. run replay, ablation, and evaluation.
-## Code Reading Notes
+- 接口已预留，但完整算法还没展开。
 
-- 入口脚本是 `scripts/dryrun_full_workflow.py`。
-- 它用于检查工程连贯性，不采集、不训练、不生成大数据。
-- 如果某些 G 盘真实数据缺失，模板/planned 状态下通常应记录为 expected missing，而不是工程失败。
+`Pending`：
+
+- 需要真实硬件、真实数据或训练结果。
+
+`Passed` / `Failed`：
+
+- 可选 smoke 命令已经实际执行。
+
+## 回到实验室后的下一步
+
+1. 创建真实 `session_id`。
+2. 确认相机内参。
+3. 确认 mocap 刚体名。
+4. 采集图像或视频。
+5. 同步到主机。
+6. 保存 FzMotion CSV。
+7. 更新 session manifest。
+8. 生成 mocap 标签。
+9. 抽查标签 overlay。
+10. 构建数据集。
+11. 训练 YOLO Pose。
+12. 运行 replay、Kalman 和评估。
+

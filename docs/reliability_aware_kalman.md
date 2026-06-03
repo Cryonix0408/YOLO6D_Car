@@ -1,147 +1,83 @@
-# Reliability-Aware Kalman Replay
+# 可靠性自适应 Kalman
 
-This is the first rule-based upgrade after the fixed 12D constant-velocity
-Kalman baseline. It keeps the same state model, but changes how strongly the
-filter trusts each PnP measurement.
+可靠性自适应 Kalman 的核心思想是：不是每一帧 YOLO/PnP 的测量都同样可信。检测质量好时更相信观测，检测质量差时更多相信预测。
 
-## Why Fixed KF Is Not Enough
+## 为什么需要可靠性
 
-A fixed Kalman filter uses one constant measurement noise matrix `R`. That is a
-good baseline, but replay measurements are not equally reliable: a frame with
-low confidence, high reprojection error, or a sudden implausible pose jump
-should influence the filter less than a clean frame.
+fast-moving 场景中会出现：
 
-## Core Idea
+- 运动模糊
+- 部分遮挡
+- 关键点误检
+- 关键点顺序错乱
+- PnP 解突变
+- 短时检测失败
 
-The replay pipeline now supports:
+如果每一帧都直接把测量喂给 Kalman，错误观测会把状态带偏。
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\smoke_replay_pipeline.py --config configs\local_smoke_replay.yaml --max-frames 3 --kalman-config configs\kalman_reliability.yaml
-```
+## 可靠性来源
 
-The insertion point is unchanged:
+可以综合以下信息：
 
-```text
-YOLO Pose / JSON replay keypoints
-PnP raw rvec/tvec
-ReliabilityEstimator
-PoseKalmanFilter with dynamic R
-filtered rvec/tvec
-CSV output
-```
+- YOLO 检测置信度
+- 关键点平均置信度
+- 可见关键点数量
+- PnP 重投影误差
+- 位姿跳变大小
+- bbox 是否合理
+- 当前帧是否发生遮挡或模糊
 
-## Signals
+## 基本策略
 
-- `confidence`: low confidence reduces reliability and can reject a measurement.
-- `reprojection_error`: small error means the PnP pose agrees with keypoints;
-  very large error can reject the measurement.
-- `blur_score`: supported by the estimator, disabled in replay by default
-  because replay smoke frames are synthetic black frames.
-- `pose_jump`: large translation or rotation-vector jumps from the previous
-  accepted measurement reduce reliability or trigger reject.
+可靠性高：
 
-Missing fields use safe defaults from `configs/kalman_reliability.yaml` and log
-a warning instead of crashing.
+- 降低测量噪声。
+- 更相信当前观测。
+- 快速修正预测。
 
-## Dynamic R Scale
+可靠性低：
 
-`dynamic_R_scale` multiplies the base Kalman measurement noise for the current
-correction only.
+- 提高测量噪声。
+- 减少错误观测影响。
+- 必要时只预测，不更新。
 
-- Smaller scale: trust current PnP more.
-- Larger scale: trust prediction more and measurement less.
-- Rejected measurement: skip correction and run predict-only.
+观测明显离群：
 
-The scale is clamped by:
+- gating 拒绝该帧。
+- 使用预测位姿或短时 hold-last。
 
-```yaml
-reliability:
-  dynamic_R:
-    min_scale: 0.5
-    max_scale: 50.0
-```
-
-## Gating
-
-Measurement rejection can happen when:
-
-- `confidence < min_confidence`
-- `reprojection_error >= reject_px`
-- translation jump or rotation jump exceeds reject thresholds
-
-When rejected, the CSV records `reject_reason`, `valid_measurement=false`, and
-the Kalman filter enters predict-only behavior for that frame.
-
-## CSV Fields
-
-Reliability-aware replay adds:
+## 配置文件
 
 ```text
-reliability_score
-dynamic_R_scale
-valid_measurement
-reject_reason
-confidence_used
-reprojection_error_used
-blur_score_used
-translation_jump_m
-rotation_jump_rad
+configs\kalman_reliability.yaml
 ```
 
-The existing fixed-KF fields remain:
+相关代码：
 
 ```text
-raw_tx raw_ty raw_tz raw_rx raw_ry raw_rz
-filtered_tx filtered_ty filtered_tz filtered_rx filtered_ry filtered_rz
-reprojection_error
-tracking_state
-kalman_valid_measurement
+src\yolo6d_car\tracking\reliability_estimator.py
+src\yolo6d_car\tracking\pose_gating.py
+src\yolo6d_car\tracking\pose_kalman_filter.py
 ```
 
-## Evaluation
+## 评价方式
 
-Use the existing evaluator on any replay CSV that was saved with Kalman fields:
+推荐比较：
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\evaluate_pose_results.py ^
-  --input-csv outputs\replay_runs\latest\pose_results.csv ^
-  --output-dir results\evaluation\latest ^
-  --paths-config configs\paths_local.yaml ^
-  --plot
-```
+- raw PnP
+- fixed Kalman
+- reliability-aware Kalman
 
-If reliability fields exist, `evaluation_report.md` also summarizes:
+重点看：
 
-- mean/min/max reliability score
-- mean dynamic R scale
-- rejected measurement frames
-- top reject reasons
+- 快速运动时是否更稳。
+- 遮挡时是否少跳变。
+- 恢复检测时是否能快速回到正确轨迹。
+- 是否引入过大延迟。
 
-## Tuning
+## Demo 讲法
 
-- Increase `base_position_measurement_noise` or
-  `base_rotation_measurement_noise` if filtered pose is still too jittery.
-- Lower them if the filter lags too much.
-- Reduce `reprojection_error.bad_px` or `pose_jump.translation_bad_m` to make
-  the filter more skeptical.
-- Increase reject thresholds if too many frames become predict-only.
+可以这样解释：
 
-## Current Limits
+“我们不是简单地把每一帧检测结果平均掉，而是根据这一帧检测是否可靠，动态决定 Kalman 对观测的信任程度。这样在高速运动、遮挡和模糊时，系统不会被坏观测轻易带偏。”
 
-This is not a learned uncertainty model. It does not yet use keypoint-level
-uncertainty, mocap GT-based tuning, or speed-dependent analysis. Blur is
-implemented but disabled for replay until real image frames are available.
-
-Future upgrades can add learned uncertainty, per-keypoint covariance,
-mocap-ground-truth calibration, and reliability analysis by object speed.
-## Code Reading Notes
-
-- 核心代码在 `src/yolo6d_car/tracking/reliability_estimator.py`。
-- `reliability_score` 越高，measurement 越可信。
-- `dynamic_R_scale` 越大，Kalman measurement noise R 越大，滤波器越不相信当前 PnP。
-- reprojection error、confidence、pose jump 是当前最重要的规则信号。
-
-常见错误：
-
-- 把 reliability-aware KF 当成学习模型。当前版本只是规则型 estimator。
-- 在 smoke 数据上过度解读指标。真实 fast-moving session 才能说明性能。

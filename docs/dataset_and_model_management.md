@@ -1,194 +1,113 @@
-# Dataset and Model Management
+# 数据集和模型管理
 
-This layer standardizes YOLO Pose dataset versions and trained model weights
-without training or generating large data by itself.
+本文档说明如何把自动标签整理成 YOLO Pose 数据集，以及如何管理训练出来的模型。
 
-## Why Dataset Manifest
+## 数据集目录
 
-`configs\dataset_manifest_template.yaml` records one dataset version:
-
-- dataset name/version/task,
-- source session manifest,
-- train/val/test dataset folders,
-- Ultralytics `dataset.yaml`,
-- keypoint shape and class names,
-- split policy and notes.
-
-It keeps dataset structure reproducible when data is generated later from mocap
-auto labels.
-
-## Why Model Registry
-
-`configs\model_registry_template.yaml` records planned or trained model
-versions:
-
-- `model_id`,
-- dataset version,
-- backbone checkpoint,
-- train run directory,
-- archived `best.pt` and `last.pt`,
-- image size, epochs, batch,
-- status and notes.
-
-Replay and realtime configs should reference the archived model path under
-`G:\YOLO6D_Car_Data\models\<model_id>\best.pt`.
-
-## Naming
-
-Dataset version:
+数据集通常放在：
 
 ```text
-car_pose_12pts_v1
-car_pose_12pts_real_v2
-car_pose_12pts_fast_v3
+G:\YOLO6D_Car_Data\outputs\datasets\<dataset_name>
 ```
 
-Model id:
+典型结构：
 
 ```text
-<dataset>_<backbone-or-stage>
+<dataset_name>
+├── images
+│   ├── train
+│   └── val
+├── labels
+│   ├── train
+│   └── val
+├── dataset.yaml
+└── split_summary.json
 ```
 
-Examples:
-
-```text
-car_pose_12pts_v1_yolov8n_pose
-car_pose_12pts_real_v2_yolov8s_pose
-car_pose_12pts_fast_v3_yolov8s_finetune
-```
-
-## Generate Ultralytics dataset.yaml
+## 从自动标签生成数据集
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_datasets.py ^
-  --manifest configs\dataset_manifest_template.yaml ^
+D:\Envs\yolo6d\python.exe scripts\prepare_yolo_pose_dataset.py ^
   --paths-config configs\paths_local.yaml ^
-  --action generate-data-yaml
+  --auto-label-dir outputs\auto_labels\<session_or_batch> ^
+  --out-dir outputs\datasets\<dataset_name>
 ```
 
-This writes the manifest's `paths.data_yaml`. With `paths_local.yaml`, that
-resolves under `G:\YOLO6D_Car_Data\outputs\datasets\...`.
+如果是多个 session，建议先把 auto labels 汇总好，再生成统一数据集。
 
-## Validate and Summarize
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_datasets.py --manifest configs\dataset_manifest_template.yaml --paths-config configs\paths_local.yaml --action validate
-D:\Envs\yolo6d\python.exe scripts\manage_models.py --registry configs\model_registry_template.yaml --paths-config configs\paths_local.yaml --action validate
-```
-
-Use `check-files` when you want a missing-file report. Planned datasets/models
-may report missing files before real data or training exists.
-
-## Print Training Command
+## 训练
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_models.py ^
-  --registry configs\model_registry_template.yaml ^
+D:\Envs\yolo6d\python.exe scripts\train_ultralytics_pose.py ^
   --paths-config configs\paths_local.yaml ^
-  --action print-train-command ^
-  --model-id car_pose_12pts_v1_yolov8n_pose
+  --dataset outputs\datasets\<dataset_name>\dataset.yaml ^
+  --model yolo11n-pose.pt ^
+  --device 0 ^
+  --project outputs\train_runs ^
+  --name <run_name>
 ```
 
-The command is printed only. It does not train.
-
-## Train
-
-After real labels and `dataset.yaml` exist, run the printed command. It uses:
+训练结果通常在：
 
 ```text
-scripts\train_ultralytics_pose.py
+G:\YOLO6D_Car_Data\outputs\train_runs\<run_name>
 ```
 
-Training outputs go under:
+最重要的权重：
 
 ```text
-G:\YOLO6D_Car_Data\outputs\train_runs\<model_id>
+weights\best.pt
 ```
 
-## Archive best.pt
+## 模型归档
 
-After training, archive weights:
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\archive_train_run.py ^
-  --model-id car_pose_12pts_v1_yolov8n_pose ^
-  --train-run outputs\train_runs\car_pose_12pts_v1_yolov8n_pose ^
-  --registry configs\model_registry_template.yaml ^
-  --paths-config configs\paths_local.yaml ^
-  --dry-run
-```
-
-Remove `--dry-run` after checking the planned copy operations. By default,
-existing `best.pt` is not overwritten. Use `--overwrite` only when you intend to
-replace an archived model.
-
-The archive directory is:
+训练完成后，建议把可用模型复制或登记到：
 
 ```text
-G:\YOLO6D_Car_Data\models\car_pose_12pts_v1_yolov8n_pose
+G:\YOLO6D_Car_Data\models
 ```
 
-It contains:
+模型命名建议包含：
 
-- `best.pt`
-- `last.pt`
-- `args.yaml`
-- `results.csv`
-- `model_metadata.json`
+- 相机类型
+- 镜头
+- 数据集版本
+- 是否 fast-moving
+- 日期
 
-The registry file is not edited automatically. After verifying the archive,
-manually update the model status to `trained`.
+例如：
 
-## Replay and Realtime Model Reference
-
-Use archived model weights in replay/realtime configs:
-
-```yaml
-yolo6d:
-  model_path: "models/car_pose_12pts_v1_yolov8n_pose/best.pt"
+```text
+car_pose_hik_8mm_fastmoving_v1_yolo11n_pose
 ```
 
-With `--paths-config configs\paths_local.yaml`, this resolves to the G-drive
-models root.
+## 不要放进 Git 的内容
 
-## Git Rules
+以下内容不要提交：
 
-Do not commit:
-
-- `outputs/`
-- `captures/`
-- `results/`
-- `logs/`
+- `outputs\datasets`
+- `outputs\train_runs`
+- `models\*.pt`
 - `*.pt`
-- `*.pth`
 - `*.onnx`
 - `*.engine`
-- large videos, images, or arrays
 
-It is fine to commit manifest templates, scripts, docs, and small examples.
+代码用 Git，同步和训练数据走共享盘。
 
-## Future Training Stages
+## 检查点
 
-Record each stage as a separate `model_id`:
+训练前确认：
 
-- synthetic pretrain,
-- real-data fine-tune,
-- fast-motion fine-tune,
-- low-light or occlusion fine-tune,
-- final paper model.
+- `dataset.yaml` 中路径正确。
+- 训练集和验证集都有图片和标签。
+- 标签可视化没有明显错位。
+- 关键点数量和模型定义一致。
+- `kpt_shape` 和数据集标签一致。
 
-Keep the dataset version and source notes explicit so replay and ablation can
-always identify which weights were used.
-## Code Reading Notes
+训练后确认：
 
-- Dataset manifest 管“训练数据集版本”，核心代码在 `src/yolo6d_car/dataset_manifest.py`。
-- Model registry 管“模型和权重版本”，核心代码在 `src/yolo6d_car/model_registry.py`。
-- `scripts/archive_train_run.py` 只归档训练输出，不自动修改 registry。
+- `best.pt` 存在。
+- `results.png` 曲线正常。
+- 验证集指标不是异常虚高或异常为 0。
+- 用几张真实图片做推理检查。
 
-推荐顺序：
-
-1. session labels 可视化正常。
-2. 生成 dataset.yaml。
-3. 打印训练命令。
-4. 训练完成后 archive best.pt。
-5. 手动更新 model registry 状态。

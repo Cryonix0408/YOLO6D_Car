@@ -1,17 +1,18 @@
-# Host Data Share Setup
+# 主机数据共享配置
 
-This guide prepares the workstation as the large-data host for YOLO6D_Car.
+本文档说明如何把主机配置成 YOLO6D_Car 的大数据存储端，并让采集笔记本通过 `Z:\` 访问。
 
-Goal:
+## 目标
 
-- Workstation stores large data in `G:\YOLO6D_Car_Data`.
-- Capture laptop maps the workstation share as `Z:\`.
-- Laptop syncs from `D:\CaptureData\<session>` to `Z:\captures`.
-- Final data lands on the host at `G:\YOLO6D_Car_Data\captures\<date>\<session>`.
+- 主机保存大体积数据：`G:\YOLO6D_Car_Data`
+- 采集笔记本把主机共享盘映射为：`Z:\`
+- 笔记本采集数据先放在：`D:\CaptureData\<session>`
+- 回来后同步到：`Z:\captures`
+- 主机最终数据位置：`G:\YOLO6D_Car_Data\captures\<date>\<session>`
 
-## 1. Host Directory Layout
+## 1. 在主机上创建目录
 
-On the workstation, create these directories in PowerShell:
+在主机管理员 PowerShell 中运行：
 
 ```powershell
 New-Item -ItemType Directory -Force -Path G:\YOLO6D_Car_Data
@@ -28,98 +29,80 @@ New-Item -ItemType Directory -Force -Path G:\YOLO6D_Car_Data\results
 New-Item -ItemType Directory -Force -Path G:\YOLO6D_Car_Data\logs
 ```
 
-You can also run:
+也可以用项目脚本检查：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\check_host_share_ready.py --create
 ```
 
-## 2. Share `G:\YOLO6D_Car_Data`
+## 2. 共享 `G:\YOLO6D_Car_Data`
 
-Windows sharing usually needs manual setup:
+Windows 图形界面操作：
 
-1. Open File Explorer.
-2. Right-click `G:\YOLO6D_Car_Data`.
-3. Click **Properties**.
-4. Open the **Sharing** tab.
-5. Click **Advanced Sharing**.
-6. Check **Share this folder**.
-7. Set share name to:
+1. 打开文件资源管理器。
+2. 右键 `G:\YOLO6D_Car_Data`。
+3. 点击“属性”。
+4. 打开“共享”选项卡。
+5. 点击“高级共享”。
+6. 勾选“共享此文件夹”。
+7. 共享名设置为：
 
 ```text
 YOLO6D_Car_Data
 ```
 
-8. Click **Permissions**.
-9. Grant your Windows user read/change access.
-10. For a temporary trusted LAN setup, you may grant `Everyone` read/change access.
-11. Confirm and close the dialogs.
+8. 点击“权限”。
+9. 给同步用户读写或更改权限。
+10. 只在可信局域网内临时使用时，可以给 `Everyone` 更改权限。
 
-Do not expose this share to the public internet.
+不要把这个共享暴露到公网。
 
-## 3. Find the Host IP
+## 3. 检查主机 IP
 
-On the workstation:
+在主机上运行：
 
 ```powershell
 ipconfig
 ```
 
-Look for an `IPv4 Address`, for example:
+找到当前局域网的 IPv4 地址，例如：
 
 ```text
-192.168.1.23
+192.168.50.250
 ```
 
-The share path will be:
+共享路径就是：
 
 ```text
-\\192.168.1.23\YOLO6D_Car_Data
+\\192.168.50.250\YOLO6D_Car_Data
 ```
 
-You can also run:
+## 4. 在采集笔记本上映射 `Z:\`
+
+推荐用 PowerShell：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_host_share_ready.py
+net use Z: "\\192.168.50.250\YOLO6D_Car_Data" /user:Cryonixzz\yolo_sync <你的密码> /persistent:yes
 ```
 
-It prints IPv4 candidates and share examples.
-
-## 4. Map `Z:\` on the Capture Laptop
-
-On the capture laptop:
-
-1. Open File Explorer.
-2. Open **This PC**.
-3. Click **Map network drive**.
-4. Choose drive `Z:`.
-5. Folder:
-
-```text
-\\<HOST_IP>\YOLO6D_Car_Data
-```
-
-Example:
-
-```text
-\\192.168.1.23\YOLO6D_Car_Data
-```
-
-6. Check **Reconnect at sign-in** if useful.
-7. Enter workstation credentials if Windows asks.
-
-## 5. Check `Z:\` on the Capture Laptop
+如果之前映射错了，先清理：
 
 ```powershell
+net use * /delete /y
+cmdkey /delete:192.168.50.250
+```
+
+映射成功后检查：
+
+```powershell
+Test-Path Z:\
 dir Z:\
 dir Z:\captures
 ```
 
-You should see the workstation data-root folders.
+## 5. 小文件同步测试
 
-## 6. Small Sync Test
-
-On the capture laptop, create a tiny test session:
+在采集笔记本上创建测试 session：
 
 ```powershell
 New-Item -ItemType Directory -Force -Path D:\CaptureData\sync_test_001
@@ -127,105 +110,78 @@ New-Item -ItemType Directory -Force -Path D:\CaptureData\sync_test_001
 "sample_id,timestamp" | Out-File D:\CaptureData\sync_test_001\capture_index.csv
 ```
 
-Dry-run:
+进入项目：
 
 ```powershell
-D:\Envs\yolo6d\python.exe .\scripts\sync_capture_to_host.py ^
-  --local-root D:\CaptureData\sync_test_001 ^
-  --host-root Z:\captures ^
-  --experiment sync_test_001 ^
-  --date 2026-05-30 ^
-  --dry-run
+cd D:\YOLO6D_Car
 ```
 
-Formal sync:
+先扫描：
 
 ```powershell
-D:\Envs\yolo6d\python.exe .\scripts\sync_capture_to_host.py ^
-  --local-root D:\CaptureData\sync_test_001 ^
-  --host-root Z:\captures ^
-  --experiment sync_test_001 ^
-  --date 2026-05-30 ^
-  --verify
+python .\scripts\sync_capture_to_host.py --local-root D:\CaptureData\sync_test_001 --host-root Z:\captures --experiment sync_test_001 --date 2026-05-30 --plan-only
 ```
 
-## 7. Check Sync Result on the Host
+正式同步：
 
-On the workstation:
+```powershell
+python .\scripts\sync_capture_to_host.py --local-root D:\CaptureData\sync_test_001 --host-root Z:\captures --experiment sync_test_001 --date 2026-05-30 --verify
+```
+
+主机上检查：
 
 ```powershell
 dir G:\YOLO6D_Car_Data\captures\2026-05-30\sync_test_001
 ```
 
-Expected files:
+应看到：
 
 - `test.txt`
 - `capture_index.csv`
 - `sync_log.txt`
 
-## 8. Troubleshooting
+## 6. 常见故障
 
-Capture laptop cannot access `\\<HOST_IP>\YOLO6D_Car_Data`:
+笔记本无法访问 `\\<HOST_IP>\YOLO6D_Car_Data`：
 
-- Confirm the host IP with `ipconfig`.
-- Confirm both computers are on the same LAN.
-- Try `ping <HOST_IP>` from the laptop.
-- Check Windows Network Discovery and File and Printer Sharing.
+- 确认主机 IP 是否正确。
+- 确认两台电脑在同一个局域网。
+- 在笔记本运行 `ping <HOST_IP>`。
+- 确认 Windows 已开启网络发现和文件共享。
 
-`Z:\` does not exist:
+`Z:\` 不存在：
 
-- Remap the network drive in File Explorer.
-- Check that the host is awake and connected.
-- Re-enter Windows credentials.
+- 重新映射网络驱动器。
+- 确认主机没有睡眠。
+- 重新输入 Windows 凭据。
 
-Permission denied:
+密码错误：
 
-- Check Advanced Sharing permissions.
-- Check NTFS Security tab permissions.
-- Temporarily test with `Everyone` read/change on a trusted LAN, then tighten later.
+- 用户名建议写完整：`主机名\用户名`。
+- 例如：`Cryonixzz\yolo_sync`。
+- 确认该用户在主机上真实存在。
 
-Host and laptop are not on the same LAN:
+权限拒绝：
 
-- Put both on the same Wi-Fi/router or same Ethernet network.
-- ToDesk remote control does not mean Windows file sharing is reachable.
+- 检查共享权限。
+- 检查 NTFS 安全权限。
+- 临时测试时可给 `Everyone` 更改权限，确认通路后再收紧。
 
-Firewall blocks sharing:
+同步慢：
 
-- Enable File and Printer Sharing through Windows Defender Firewall for the current private network.
-- Make sure the network profile is Private, not Public, when appropriate.
+- 大数据优先用有线网。
+- 不要一边训练一边同步。
+- 先用 `--plan-only` 看文件数量和总大小。
 
-Host sleeps:
+同步中断：
 
-- Disable sleep during experiments.
-- Keep power connected.
+- 直接重跑同步命令。
+- 默认会跳过已经复制成功且大小一致的文件。
 
-IP address changes:
+## 7. 安全建议
 
-- Re-run `ipconfig`.
-- Remap `Z:\` with the new IP.
-- Consider a DHCP reservation later.
+- 共享只在可信局域网使用。
+- 不要暴露到公网。
+- 不要把 `captures/`、`outputs/`、`models/*.pt` 放进 Git。
+- 重要数据同步完成后，主机再做一次备份。
 
-Sync is slow:
-
-- Prefer Ethernet for large videos.
-- Avoid syncing while training or copying other large files.
-- Use `--dry-run` first to estimate file count.
-
-File already exists:
-
-- `sync_capture_to_host.py` does not overwrite by default.
-- Use `--overwrite` only when you are sure the destination should be replaced.
-
-Sync interrupted halfway:
-
-- Re-run the same command without `--overwrite`.
-- Incremental sync should skip already copied files.
-- Use `--verify` to compare copied file sizes.
-
-## 9. Security Advice
-
-- Do not expose `YOLO6D_Car_Data` to the public internet.
-- Use this share only on a trusted LAN.
-- Do not commit large files to Git.
-- Back up important captures and FzMotion CSV regularly.
-- After experiments, remove `Everyone` permissions or disable the share if not needed.

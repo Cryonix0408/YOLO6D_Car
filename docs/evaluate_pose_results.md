@@ -1,91 +1,73 @@
-# Evaluate Pose Results
+# 位姿结果评估
 
-`scripts/evaluate_pose_results.py` compares raw PnP pose and filtered Kalman pose from a replay CSV.
+`scripts\evaluate_pose_results.py` 用于评估 YOLO6D / PnP / Kalman 输出的位姿结果。
 
-## Input CSV
+## 目的
 
-The CSV should contain raw pose columns:
+评估时主要回答这些问题：
 
-```text
-raw_tx raw_ty raw_tz raw_rx raw_ry raw_rz
-```
+- 原始 PnP 位姿是否稳定。
+- Kalman 后是否降低抖动。
+- fast-moving 场景下误差是否发散。
+- 遮挡或模糊时是否出现大跳变。
+- filtered pose 是否比 raw pose 更适合 demo。
 
-and filtered pose columns:
+## 输入
 
-```text
-filtered_tx filtered_ty filtered_tz filtered_rx filtered_ry filtered_rz
-```
-
-It should also contain either `timestamp_s`, `timestamp`, or `frame_id` / `frame_index`. If no timestamp column exists, the script generates timestamps from frame id and `--default-fps`.
-
-If filtered columns are missing, the script reports:
+常见输入是回放或实时推理保存的 CSV，例如：
 
 ```text
-filtered pose columns not found; run replay with --kalman-config first.
+outputs\replay_runs\<run>\pose_results.csv
 ```
 
-## Run
+如果有预处理后的 GT，也可以用于误差对比。
+
+## 运行命令
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\evaluate_pose_results.py --input-csv outputs\replay_runs\latest\pose_results.csv --output-dir results\evaluation\latest --paths-config configs\paths_local.yaml --plot
+D:\Envs\yolo6d\python.exe scripts\evaluate_pose_results.py ^
+  --input-csv outputs\replay_runs\latest\pose_results.csv ^
+  --output-dir results\evaluation\latest ^
+  --paths-config configs\paths_local.yaml ^
+  --plot
 ```
 
-For a local ignored smoke CSV in the repo:
+## 输出
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\evaluate_pose_results.py --input-csv outputs\kalman_smoke.csv --output-dir outputs\evaluation\kalman_smoke --plot
-```
+典型输出包括：
 
-## Outputs
+- 误差统计 JSON
+- 评估报告 Markdown
+- 轨迹图
+- raw / filtered 对比图
+- 平移误差和旋转误差曲线
 
-```text
-metrics_summary.json
-metrics_summary.csv
-evaluation_report.md
-```
+## 重点指标
 
-With `--plot`, the script also tries to write:
+- 平移误差均值
+- 平移误差最大值
+- 旋转误差均值
+- 旋转误差最大值
+- 轨迹平滑程度
+- 位姿突变次数
+- 检测失败帧数量
 
-```text
-translation_xyz_raw_vs_filtered.png
-rotation_rvec_raw_vs_filtered.png
-translation_velocity.png
-translation_acceleration.png
-jitter_comparison.png
-tracking_state_timeline.png
-```
+## 解读建议
 
-If matplotlib is missing, metrics are still written and plotting is skipped with a warning.
+如果 raw 很抖但 filtered 稳：
 
-## Metrics
+- Kalman 有效果。
 
-Jitter is the RMS frame-to-frame pose delta norm. Lower jitter means less frame-to-frame shaking.
+如果 filtered 稳但明显滞后：
 
-Velocity smoothness uses the standard deviation of translation velocity norm. Lower is smoother.
+- 滤波太强，需要调小平滑或增大过程噪声。
 
-Acceleration smoothness uses the standard deviation of translation acceleration norm. Lower is smoother and usually indicates less abrupt motion.
+如果 raw 和 filtered 都跳：
 
-Positive improvement percentages mean the filtered pose is smoother than raw pose.
+- 可能是关键点检测或 PnP 输入本身错误，需要先检查标签、模型或内参。
 
-## Interpreting Raw vs Filtered
+如果评估结果看起来异常好：
 
-- Raw pose should respond immediately but may jitter.
-- Filtered pose should reduce jitter and acceleration spikes.
-- If filtered metrics are worse, the Kalman Q/R values may be too stiff, too loose, or mismatched to the motion speed.
-
-## Future Mocap GT
-
-`--gt-csv` is reserved. Passing it currently records a TODO warning instead of crashing. Later it should compare raw/filtered pose against FzMotion ground truth.
-## Code Reading Notes
-
-- `scripts/evaluate_pose_results.py` 是 CLI 入口。
-- `src/yolo6d_car/evaluation/trajectory.py` 负责读取 pose CSV。
-- `src/yolo6d_car/evaluation/metrics.py` 负责 jitter / velocity / acceleration 指标。
-- `src/yolo6d_car/evaluation/gt_metrics.py` 负责 `gt_pose.csv` 对比。
-
-结果判断：
-
-- filtered jitter 低于 raw jitter，通常说明滤波更平滑。
-- 平滑不等于准确；是否准确需要 GT，例如 `gt_pose.csv`。
-- smoke 数据帧数少，只能确认流程能跑。
+- 检查是否测试集和训练集重叠。
+- 检查 GT 是否和预测使用了同源数据。
 

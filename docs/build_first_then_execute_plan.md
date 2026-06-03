@@ -1,103 +1,96 @@
-# Build First, Then Execute Plan
+# 先搭工程，再跑实验
 
-The current strategy is to finish the program skeleton first, then collect real data, calibrate, train, and run experiments.
+本项目采用“先把工程入口搭好，再采集真实数据”的策略。不要把 placeholder 当成失败，它表示接口位置已经预留，等真实数据回来后继续补强。
 
-## Stage 0: 环境和路径
+## 阶段 0：环境和路径
 
-Goal: make Python, CUDA, repo root, and G-drive data root predictable.
+目标：让 Python、CUDA、项目根目录和数据根目录稳定可控。
 
-Status: mostly built.
+状态：基本完成。
 
-Key command:
+检查命令：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\check_project_readiness.py --paths-config configs\paths_local.yaml
 ```
 
-## Stage 1: 相机标定程序构建
+## 阶段 1：相机标定
 
-Goal: separately calibrate Hik MV-CS016-10UC with 6mm and 8mm lenses.
+目标：分别标定海康 MV-CS016-10UC 的不同镜头，例如 6mm 和 8mm。
 
-Status: baseline built for chessboard calibration.
+状态：棋盘格标定流程已搭建。
 
-Next execution: print board, capture 30-80 diverse samples for each lens, inspect reprojection reports.
+下一步：每个镜头采集 30 到 80 张姿态丰富的标定图，检查重投影误差和去畸变效果。
 
-## Stage 2: 数据同步程序构建
+## 阶段 2：数据同步
 
-Goal: copy laptop capture sessions to workstation G-drive data root.
+目标：把采集笔记本上的 session 同步到主机 G 盘。
 
-Status: built with dry-run, incremental copy, overwrite option, size verification, and logs.
+状态：已支持扫描、增量复制、覆盖选项、大小校验和日志。
 
-Next execution: test laptop `Z:\captures` mapping with one small real session.
+下一步：用 `Z:\captures` 做真实 session 同步。
 
-## Stage 3: 采集程序构建
+## 阶段 3：采集程序
 
-Goal: collect D455 object/board samples with metadata.
+目标：采集 D455 / 海康图像，并保存 metadata 和时间戳。
 
-Status: built.
+状态：D455 自动采集和海康连续帧采集入口都已存在。
 
-Next execution: verify capture folder structure and timestamps on a short session.
+下一步：海康 fast-moving 数据优先使用 `collect_hikvision_sequence.py`。
 
-## Stage 4: 自动标签程序构建
+## 阶段 4：自动打标签
 
-Goal: combine images, FzMotion CSV, camera/object rigid transforms, and object model to produce YOLO Pose labels.
+目标：结合图像、FzMotion CSV、相机外参、小车模型点，生成 YOLO Pose 标签。
 
-Status: built.
+状态：已搭建。
 
-Next execution: label one small session and inspect overlays before batch labeling.
+下一步：每组真实 session 先打标签并检查 overlay，再批量处理。
 
-## Stage 5: 数据集构建程序
+## 阶段 5：数据集构建
 
-Goal: merge auto-label sessions into an Ultralytics Pose dataset.
+目标：把 auto labels 合并成 Ultralytics Pose 数据集。
 
-Status: built.
+状态：已搭建。
 
-Next execution: build one dataset, inspect `dataset.yaml`, image/label counts, and split summary.
+下一步：生成数据集后检查 `dataset.yaml`、图片数量、标签数量和 train/val 划分。
 
-## Stage 6: 训练程序
+## 阶段 6：训练
 
-Goal: train Ultralytics YOLO Pose and store runs on G drive.
+目标：训练 YOLO Pose，并把训练结果保存在 G 盘。
 
-Status: training wrapper built.
+状态：训练 wrapper 已搭建。
 
-Next execution: train a short sanity run first, then full run after labels look correct.
+下一步：先短训 sanity run，再正式训练。
 
-## Stage 7: replay / realtime 程序
+## 阶段 7：回放和实时推理
 
-Goal: replay should validate PnP logic without hardware; realtime should run with camera and trained weights.
+目标：回放验证 PnP 逻辑，实时入口连接相机和训练权重。
 
-Status: replay smoke works; live entry exists.
+状态：replay smoke 可用，live 入口存在。
 
-Next execution: after training, run live with matching camera intrinsics and model weights.
+下一步：训练后用匹配的相机内参和模型权重运行 live。
 
-## Stage 8: fixed Kalman Filter
+## 阶段 8：固定 Kalman
 
-Goal: add a simple post-PnP smoothing baseline.
+目标：加入一个固定参数的 post-PnP 平滑基线。
 
-Status: fixed 12D constant-velocity KF integrated for replay via `--kalman-config`.
+状态：12D 匀速 Kalman 基线已接入 replay。
 
-Next execution: compare raw vs filtered replay CSV when real replay data exists.
+下一步：真实数据上比较 raw 和 filtered。
 
-## Stage 9: reliability-aware Kalman Filter
+## 阶段 9：可靠性自适应 Kalman
 
-Goal: use keypoint reliability, reprojection error, and detection quality to adapt measurement noise.
+目标：根据关键点可靠性、重投影误差和检测质量动态调整测量噪声。
 
-Status: placeholder only.
+状态：基础接口已预留。
 
-Next build step: design reliability signals and dynamic R update after fixed KF baseline is evaluated.
+下一步：先评估固定 Kalman，再设计动态可靠性信号。
 
-## Stage 10: evaluation and paper results
+## 阶段 10：评估和论文结果
 
-Goal: produce quantitative pose metrics and experiment figures.
+目标：输出定量误差、轨迹图、消融图和实验结论。
 
-Status: placeholder metrics exist; full mocap comparison/report scripts are not built yet.
+状态：基础评估入口存在。
 
-Next build step: add offline evaluation script after prediction logs and mocap GT format are stable.
-## Code Reading Notes
-
-这个项目采用“先构建工程入口，再采真实数据”的策略。阅读时不要把 placeholder 当成失败：
-
-- placeholder 表示接口位置已经预留。
-- validate-config 表示可以离线检查配置和依赖。
-- 真正的性能结论必须等真实 captures、FzMotion CSV、标定和训练权重回来后再判断。
+下一步：稳定预测日志和 mocap GT 格式后，完善离线评估报告。
 

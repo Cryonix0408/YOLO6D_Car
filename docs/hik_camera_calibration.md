@@ -1,21 +1,18 @@
-# Hik Camera Calibration
+# 海康工业相机标定说明
 
-This project uses the Hikrobot MV-CS016-10UC industrial camera with two lenses:
+本项目使用海康 MV-CS016-10UC 工业相机。你目前主要涉及 6mm 和 8mm 镜头。
 
-- 6mm lens
-- 8mm lens
+每次更换镜头、改变焦距、重新对焦、明显改变安装方式后，都应该重新标定内参。6mm 和 8mm 的内参不能混用。
 
-Each lens must be calibrated separately because focal length, principal point, distortion, focus, and mounting can change when the lens changes. Do not reuse 6mm intrinsics for the 8mm lens, or 8mm intrinsics for the 6mm lens.
+## 输出目录
 
-## Output Layout
-
-Calibration outputs are stored under the G-drive data root:
+主机训练环境下，标定结果建议保存到：
 
 ```text
 G:\YOLO6D_Car_Data\outputs\calibration
 ```
 
-6mm output:
+6mm 镜头输出示例：
 
 ```text
 G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm
@@ -28,7 +25,7 @@ G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm
 └── calibration_summary.json
 ```
 
-8mm output:
+8mm 镜头输出示例：
 
 ```text
 G:\YOLO6D_Car_Data\outputs\calibration\hik_8mm
@@ -41,15 +38,11 @@ G:\YOLO6D_Car_Data\outputs\calibration\hik_8mm
 └── calibration_summary.json
 ```
 
-If a session already exists and `--overwrite` is not passed, capture mode creates a timestamped session such as:
+如果同名 session 已存在且没有加 `--overwrite`，程序会自动生成带时间戳的新目录。
 
-```text
-hik_6mm_20260530_153000
-```
+## 标定板配置
 
-## Calibration Board
-
-The first baseline supports a chessboard:
+当前默认使用棋盘格：
 
 ```yaml
 calibration_board:
@@ -59,181 +52,159 @@ calibration_board:
   square_size_mm: 25.0
 ```
 
-`pattern_cols` and `pattern_rows` are the number of inner corners, not the number of printed squares.
+注意：`pattern_cols` 和 `pattern_rows` 是“内角点数量”，不是打印方格数量。
 
-## Board Placement Advice
+## 标定采集建议
 
-Use a flat, rigid board. Keep the printed square size accurate. Make sure the lens is tightened and focus does not change during capture.
+标定板要平整、硬、不要弯。镜头必须拧紧，采集过程中不要重新对焦。
 
-Recommended views:
+建议覆盖这些姿态：
 
-- Center
-- Left top
-- Right top
-- Left bottom
-- Right bottom
-- Near distance
-- Far distance
-- Tilted forward/backward
-- Rotated clockwise/counterclockwise
+- 画面中心
+- 左上
+- 右上
+- 左下
+- 右下
+- 近距离
+- 远距离
+- 向前/向后倾斜
+- 顺时针/逆时针旋转
 
-Recommended sample count: 30-80 accepted images.
+推荐有效样本数：30 到 80 张。
 
-## Run 6mm Calibration
+## 运行 6mm 标定
 
-Validate config without opening the camera:
+只验证配置，不打开相机：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_6mm.yaml --paths-config configs\paths_local.yaml --mode validate_config
 ```
 
-Capture and calibrate:
+采集并自动标定：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_6mm.yaml --paths-config configs\paths_local.yaml --mode capture_and_calibrate
 ```
 
-Capture only:
+只采集：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_6mm.yaml --paths-config configs\paths_local.yaml --mode capture
 ```
 
-Calibrate from existing samples:
+从已有样本重新标定：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_6mm.yaml --paths-config configs\paths_local.yaml --mode calibrate
 ```
 
-## Run 8mm Calibration
+## 运行 8mm 标定
 
-Validate config:
+只验证配置：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_8mm.yaml --paths-config configs\paths_local.yaml --mode validate_config
 ```
 
-Capture and calibrate:
+采集并自动标定：
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\calibrate_hik_camera.py --config configs\calibration_hik_8mm.yaml --paths-config configs\paths_local.yaml --mode capture_and_calibrate
 ```
 
-## Automatic Sampling Behavior
+## 自动采样逻辑
 
-The calibration program is designed for automatic sampling. You start the program, move the chessboard in front of the camera, and the program saves only useful frames.
+标定程序会自动判断当前帧是否值得保存。你只需要移动标定板，程序会筛掉重复或质量差的图像。
 
-Every frame is checked for:
+每帧会检查：
 
-- Full chessboard detection.
-- Blur score above `capture.blur_threshold`.
-- Corner coverage above `capture.min_corner_coverage_ratio`.
-- Enough time since the last saved sample.
-- Enough difference from previous saved samples.
+- 是否完整检测到棋盘格。
+- 清晰度是否高于 `capture.blur_threshold`。
+- 角点覆盖范围是否足够。
+- 距离上一张保存图是否间隔足够久。
+- 当前视角是否和之前样本差异足够大。
 
-Similarity rejection uses board center movement, board area/scale change, and overall corner distribution change. If the current view is too close to previous samples, the reject reason is:
+如果当前视角太像之前保存过的样本，会显示：
 
 ```text
 too similar to previous samples
 ```
 
-After `min_samples` is reached, the program starts an automatic calibration countdown. If you keep moving the board and new useful samples are saved, the countdown is pushed back so more diverse samples can be collected. At `max_samples`, capture stops and calibration starts.
+达到 `min_samples` 后，程序会进入自动标定倒计时。如果你继续移动标定板并采到有效新样本，倒计时会后移。达到 `max_samples` 后自动停止采集并开始标定。
 
-## Live Capture Window
+## 采集窗口按键
 
-The capture window shows:
+- `q` 或 `Esc`：退出
+- `s`：强制保存下一张检测到棋盘格的图
+- `c`：达到最小样本数后停止采集并标定
+- `r`：重置当前运行中的样本差异记忆
 
-- Current lens
-- Accepted sample count
-- Blur score
-- Board detected/not detected
-- Accept/reject reason
+## 如何判断标定质量
 
-Keys:
-
-- `q` or `Esc`: quit
-- `s`: force-save the next detected frame as a backup override
-- `c`: stop capture and calibrate after minimum samples
-- `r`: reset sample diversity memory for the current run
-
-## Checking Reprojection Error
-
-Open the report:
+打开报告：
 
 ```powershell
-notepad G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm\calibration_report_hik_6mm.md
+notepad G:\YOLO6D_Car_Data\outputs\calibration\hik_8mm\calibration_report_hik_8mm.md
 ```
 
-Lower reprojection error is better. If RMS or mean error is high, likely causes include:
+重投影误差越小越好。如果 RMS 或 mean error 明显偏高，优先检查：
 
-- Calibration board square size is wrong.
-- Corner detection is unstable.
-- Images are blurry.
-- Sample poses are not diverse enough.
-- Lens is loose or focus changed during capture.
-- 6mm and 8mm configs or sample images were mixed.
+- 棋盘格尺寸是否填错。
+- `pattern_cols` / `pattern_rows` 是否填的是内角点。
+- 图像是否模糊。
+- 样本姿态是否太单一。
+- 镜头是否松动或采集中重新对焦。
+- 6mm 和 8mm 样本是否混在一起。
 
-Also inspect:
+同时检查：
 
 ```text
 debug_corners
 undistort_check
 ```
 
-## Using Intrinsics In PnP / Replay / Realtime
+## 在 PnP / 实时推理中使用内参
 
-Use the intrinsics file matching the physical lens mounted on the camera:
+使用哪个镜头，就用哪个镜头对应的内参文件：
 
 ```text
 G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml
 G:\YOLO6D_Car_Data\outputs\calibration\hik_8mm\camera_intrinsics_hik_8mm.yaml
 ```
 
-When replay or realtime configs gain a camera-intrinsics field, point them to the matching file. Until then, use the YAML values to populate camera matrix and distortion fields in the relevant PnP input path.
+不要把原始标定图片和生成输出提交到 Git。`outputs/` 应该由 `.gitignore` 忽略。
 
-Do not commit raw calibration images or generated outputs. `outputs/` is ignored by `.gitignore`.
+## 常见问题
 
-## Troubleshooting
+相机打不开：
 
-Camera does not open:
+- 检查 USB3.0 连接。
+- 关闭 MVS Viewer 或其他占用相机的软件。
+- 确认海康 MVS SDK 已安装。
+- 确认 Python 能找到 MVS SDK 的 `MvCameraControl_class.py`。
 
-- Check USB connection and power.
-- Close other camera software.
-- Install or configure Hikrobot SDK.
-- Try OpenCV fallback with a different `camera.device_index` in the YAML if needed.
+检测不到棋盘格：
 
-No board detected:
+- 确认棋盘格内角点数量。
+- 增强光照。
+- 保证整个棋盘格在画面内。
+- 减少运动模糊。
 
-- Confirm `pattern_cols` and `pattern_rows` are inner corners.
-- Improve lighting.
-- Keep the whole board visible.
-- Reduce motion blur.
+图像被判定为模糊：
 
-Images rejected as blurry:
+- 提高光照。
+- 略微增加曝光。
+- 稳定标定板。
+- 重新调焦。
 
-- Increase lighting or exposure.
-- Stabilize the board.
-- Refocus the lens.
+覆盖范围太小：
 
-Board coverage too small:
+- 把标定板移近。
+- 让棋盘格覆盖画面更多区域。
 
-- Move the board closer.
-- Use views where the board spans more of the image.
+视角太相似：
 
-View too similar:
+- 把板移动到画面不同位置。
+- 改变距离。
+- 增加倾斜和旋转。
 
-- Move the board to different image regions.
-- Change distance.
-- Tilt and rotate the board.
-## Code Reading Notes
-
-- CLI 入口是 `scripts/calibrate_hik_camera.py`。
-- 棋盘格检测在 `src/yolo6d_car/calibration/board_detector.py`。
-- 自动采样质量判断在 `calibration_quality.py`。
-- OpenCV 标定求解在 `camera_calibrator.py`。
-
-关键提醒：
-
-- 6mm 和 8mm 必须分别标定。
-- `pattern_cols` / `pattern_rows` 是内角点数量。
-- reprojection error 偏高时，优先检查棋盘尺寸、清晰度、姿态覆盖和镜头是否松动。

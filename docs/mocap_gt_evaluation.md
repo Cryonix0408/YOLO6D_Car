@@ -1,111 +1,81 @@
-# Mocap GT Evaluation
+# Mocap GT 位姿评估
 
-`scripts/evaluate_pose_results.py` can optionally compare replay pose output against a preprocessed mocap ground-truth pose CSV.
+本文档说明如何用 FzMotion 动捕结果作为 GT，对 YOLO6D 输出进行位姿误差评估。
 
-This first version does **not** parse raw FzMotion CSV directly. Convert raw mocap data to a simple `gt_pose.csv` first.
+## 为什么需要 mocap GT
 
-## Supported GT Format
+只看画面 overlay，无法定量说明 6DoF 位姿准不准。用 mocap GT 可以得到：
 
-Required columns:
+- 平移误差
+- 旋转误差
+- 随时间变化的误差曲线
+- 高速运动时误差是否变大
+- Kalman 滤波是否真正改善结果
 
-```text
-timestamp
-gt_tx
-gt_ty
-gt_tz
-gt_rx
-gt_ry
-gt_rz
-```
+## 需要的数据
 
-The GT pose should be expressed in the same coordinate convention as replay output:
+至少需要：
 
-- translation in meters
-- rotation as Rodrigues rotation vector in radians
-- timestamps in seconds
+- 图像或连续帧采集数据
+- 对应的 FzMotion CSV
+- 相机外参
+- 小车刚体到模型坐标系的变换
+- YOLO6D / PnP 预测结果 CSV
 
-## Run
+## 基本流程
+
+1. 检查 FzMotion CSV：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\evaluate_pose_results.py `
-  --input-csv outputs\replay_runs\session_001\pose_results.csv `
-  --gt-csv outputs\gt_pose\session_001_gt_pose.csv `
-  --output-dir results\evaluation\session_001 `
-  --paths-config configs\paths_local.yaml `
-  --max-time-diff-s 0.03 `
-  --plot
+D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\<session>.csv --paths-config configs\paths_local.yaml --camera-rigid <camera_rigid> --object-rigid <object_rigid> --output-dir results\mocap_quality\<session> --plot
 ```
 
-With `configs\paths_local.yaml`, relative `outputs\...` and `results\...` paths resolve under `G:\YOLO6D_Car_Data`.
+2. 运行推理或回放，保存预测结果。
 
-## Timestamp Alignment
+3. 对齐预测时间戳和 mocap 时间戳。
 
-Predicted poses are matched to GT poses by nearest timestamp.
+4. 计算误差。
 
-`--max-time-diff-s` controls the largest allowed timestamp gap. The default is `0.03` seconds. Frames without a GT match inside this window are ignored for GT metrics.
+## 误差定义
 
-## Outputs
-
-Existing raw/filtered smoothness outputs are unchanged:
+平移误差：
 
 ```text
-metrics_summary.json
-metrics_summary.csv
-evaluation_report.md
+e_t = || t_pred - t_gt ||
 ```
 
-When `--gt-csv` is provided, additional files are created:
+旋转误差：
 
 ```text
-gt_metrics_summary.json
-gt_metrics_summary.csv
-gt_error_timeseries.csv
-gt_evaluation_report.md
+e_R = angle( R_gt^T R_pred )
 ```
 
-If `--plot` is enabled:
+如果用四元数，也可以通过相对四元数求旋转角。
 
-```text
-gt_translation_raw_filtered.png
-gt_rotation_raw_filtered.png
-gt_translation_error_over_time.png
-gt_rotation_error_over_time.png
-gt_error_summary.png
-```
+## 注意事项
 
-## Metrics
+时间戳不对齐会让误差虚高：
 
-The GT report includes raw-vs-GT and filtered-vs-GT metrics:
+- fast-moving 场景尤其敏感。
+- 需要确认相机帧时间和 mocap 时间是否同一时间基准。
 
-- translation RMSE
-- ATE, computed as RMSE of translation error norm
-- rotation error mean / median / max
-- RPE translation mean / median / max
-- RPE rotation mean / median / max
-- per-axis translation RMSE
-- per-axis mean translation error
-- matched frame count and timestamp gap statistics
+坐标系不一致会让结果完全错误：
 
-## Interpretation
+- 检查 `T_camera_rigid_to_optical`。
+- 检查 `T_object_rigid_to_model`。
+- 检查相机刚体和小车刚体名称。
 
-Raw pose evaluates the direct PnP output.
+小车刚体重建后：
 
-Filtered pose evaluates the Kalman-filtered trajectory. If filtered columns are missing, the script still reports raw-vs-GT metrics and writes a warning telling you to rerun replay with `--kalman-config`.
+- 旧外参和旧 object model 可能不能直接复用。
+- 需要重新验证标签 overlay。
 
-For smoke data with only a few frames, RPE and smoothness numbers are mainly a pipeline check. Real fast-motion conclusions should use full sessions.
+## Demo 建议
 
-## Raw FzMotion CSV
+如果时间紧，至少展示：
 
-If you pass a raw FzMotion CSV, the script will reject it with a clear message and print the first headers. That is expected. First convert raw mocap into:
+- raw PnP vs mocap GT 轨迹
+- filtered pose vs mocap GT 轨迹
+- 平移误差曲线
+- 旋转误差曲线
 
-```text
-timestamp,gt_tx,gt_ty,gt_tz,gt_rx,gt_ry,gt_rz
-```
-
-Then rerun this evaluation.
-## Code Reading Notes
-
-- GT 对比入口仍然是 `scripts/evaluate_pose_results.py`。
-- 第一版 GT 格式必须是预处理后的 `gt_pose.csv`。
-- 原始 FzMotion CSV 需要先转换，当前不会直接解析复杂原始格式。
-- ATE/RPE 评估的是准确度；jitter/smoothness 评估的是轨迹稳定性。

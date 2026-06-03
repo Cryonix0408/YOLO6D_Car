@@ -1,78 +1,87 @@
-# Session Manifest Workflow
+# Session Manifest 工作流
 
-The session manifest is the project index for real capture sessions. It keeps
-code on `D:\Research\YOLO6D_Car` and large data under `G:\YOLO6D_Car_Data`,
-while giving every capture a stable ID and standard metadata.
+session manifest 用来统一记录每一组实验数据：图片在哪里、CSV 在哪里、相机是什么、镜头是什么、刚体名是什么、输出应该写到哪里。
 
-## Why It Exists
+它的价值是避免每次手写一长串命令，减少路径和刚体名写错。
 
-Each real experiment produces images or videos, mocap CSV, generated labels,
-replay configs, training splits, and ablation reports. A manifest keeps those
-paths and experimental conditions together so later scripts can automate:
+## 典型字段
 
-- automatic labeling,
-- dataset construction,
-- replay smoke tests,
-- Kalman ablation,
-- paper result grouping.
+每个 session 至少应包含：
 
-## session_id Naming
+- `session_id`
+- `capture.root`
+- `capture.images_dir`
+- `camera.type`
+- `camera.lens`
+- `camera.intrinsics`
+- `mocap.enabled`
+- `mocap.csv_path`
+- `mocap.camera_rigid`
+- `mocap.object_rigid`
+- `outputs.auto_labels`
+- `outputs.replay_config`
+- `split`
 
-Use:
+## 路径解析
 
-```text
-YYYY-MM-DD_object_motion_index
+使用主机环境时：
+
+```powershell
+--paths-config configs\paths_local.yaml
 ```
 
-Examples:
+相对路径会解析到：
 
 ```text
-2026-05-30_car_static_001
-2026-05-30_car_fast_lateral_001
-2026-05-30_car_rotation_002
+G:\YOLO6D_Car_Data
 ```
 
-Keep IDs stable once data exists on disk.
+例如：
 
-## Fields
+```text
+captures\2026-05-30\session_001
+```
 
-Top-level `dataset` fields:
+会变成：
 
-- `name`: dataset name, such as `car_fast6d_v1`.
-- `description`: short human-readable purpose.
-- `data_root`: expected large-data root.
-- `created_by`: dataset owner.
-- `version`: dataset version.
+```text
+G:\YOLO6D_Car_Data\captures\2026-05-30\session_001
+```
 
-Per-session fields:
+## 注册新 session
 
-- `session_id`, `date`, `object`
-- `camera.type`, `camera.lens`, `camera.intrinsics`
-- `mocap.enabled`, `mocap.csv_path`, `mocap.camera_rigid`,
-  `mocap.object_rigid`
-- `capture.root`, `capture.images_dir`, `capture.videos_dir`,
-  `capture.metadata`
-- `motion.type`, `motion.speed_level`, `motion.occlusion`,
-  `motion.lighting`, `motion.background`
-- `outputs.auto_labels`, `outputs.dataset_split`,
-  `outputs.replay_config`, `outputs.ablation_run_name`
+先 dry-run：
 
-Paths like `captures/...`, `FZmotion_Data/...`, `outputs/...`, and
-`results/...` resolve under `G:\YOLO6D_Car_Data` when using
-`--paths-config configs\paths_local.yaml`.
+```powershell
+D:\Envs\yolo6d\python.exe scripts\register_capture_session.py ^
+  --capture-root captures\2026-05-30\<session_id> ^
+  --paths-config configs\paths_local.yaml ^
+  --session-id <session_id> ^
+  --camera-type hikrobot ^
+  --lens 8mm ^
+  --motion-type lateral ^
+  --speed-level fast ^
+  --split train ^
+  --dry-run
+```
 
-## Add a New Session
+确认无误后追加：
 
-1. Copy one session block in `configs\session_manifest_template.yaml`.
-2. Change `session_id`, `date`, motion fields, camera type/lens, and split.
-3. Point `mocap.csv_path` to the expected FzMotion CSV.
-4. Point `capture.root` to the capture folder.
-5. Choose `outputs.dataset_split` as `train`, `val`, `test`, or another
-   explicit experiment split.
+```powershell
+D:\Envs\yolo6d\python.exe scripts\register_capture_session.py ^
+  --capture-root captures\2026-05-30\<session_id> ^
+  --paths-config configs\paths_local.yaml ^
+  --manifest configs\session_manifest_template.yaml ^
+  --session-id <session_id> ^
+  --camera-type hikrobot ^
+  --lens 8mm ^
+  --motion-type lateral ^
+  --speed-level fast ^
+  --split train ^
+  --append
+```
 
-No real files are required for basic validation.
-
-## Validate
+## 校验 manifest
 
 ```powershell
 D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
@@ -81,90 +90,30 @@ D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
   --action validate
 ```
 
-## Summary
+## 单 session 处理
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
+D:\Envs\yolo6d\python.exe scripts\process_single_session.py ^
+  --session-id <session_id> ^
   --manifest configs\session_manifest_template.yaml ^
   --paths-config configs\paths_local.yaml ^
-  --action summary
+  --output-dir results\session_processing\<session_id>
 ```
 
-## Export Session Table
+## 常见错误
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
-  --manifest configs\session_manifest_template.yaml ^
-  --paths-config configs\paths_local.yaml ^
-  --action export-table ^
-  --output results\session_tables\session_manifest_summary.csv
-```
+路径存在于笔记本但主机找不到：
 
-This creates a CSV table for planning and experiment tracking.
+- 检查是否已经同步到 `G:\YOLO6D_Car_Data`。
+- 检查 manifest 中是否还写着 `D:\CaptureData`。
 
-## Generate Replay Configs
+mocap 刚体名不一致：
 
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
-  --manifest configs\session_manifest_template.yaml ^
-  --paths-config configs\paths_local.yaml ^
-  --action generate-replay-configs
-```
+- 用 `check_mocap_csv.py` 看 CSV 里真实刚体名。
+- 修改 manifest 里的 `camera_rigid` 和 `object_rigid`。
 
-Generated files go to each session's `outputs.replay_config`, for example:
+内参和镜头不匹配：
 
-```text
-G:\YOLO6D_Car_Data\outputs\replay_configs\2026-05-30_car_fast_lateral_001.yaml
-```
+- 6mm 用 6mm 内参。
+- 8mm 用 8mm 内参。
 
-The generated replay configs are skeletons. After automatic labels or replay
-predictions exist, fill `yolo6d.replay_json_path`.
-
-## Batch Dry-Run Ablation
-
-```powershell
-D:\Envs\yolo6d\python.exe scripts\manage_sessions.py ^
-  --manifest configs\session_manifest_template.yaml ^
-  --paths-config configs\paths_local.yaml ^
-  --action run-ablation ^
-  --speed-level fast ^
-  --dry-run
-```
-
-Filters:
-
-- `--speed-level fast`
-- `--motion-type lateral`
-- `--split test`
-- `--camera-type hikrobot`
-- `--lens 6mm`
-
-Dry-run prints the commands without running large experiments.
-
-## Paper Experiment Groups
-
-Use manifest fields to group results by:
-
-- `static`
-- `slow`
-- `medium`
-- `fast`
-- `occlusion`
-- `low-light`
-- `rotation`
-- `approach`
-- `receding`
-
-The same manifest can drive dataset split tables and ablation result tables.
-## Code Reading Notes
-
-- `src/yolo6d_car/session_manifest.py` 是 manifest 的核心逻辑。
-- `scripts/manage_sessions.py` 是命令行入口。
-- session 表示“一次采集”，不是训练集，也不是模型。
-- `outputs.dataset_split` 决定这个 session 后续进入 train / val / test 的建议 split。
-
-常见错误：
-
-- `session_id` 重复。
-- `camera.lens` 和 `camera.intrinsics` 不匹配。
-- `mocap.camera_rigid` / `mocap.object_rigid` 和 FzMotion CSV 中的刚体名不一致。
