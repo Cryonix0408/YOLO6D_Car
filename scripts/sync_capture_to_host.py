@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import shutil
 import sys
 from datetime import datetime
@@ -95,7 +96,24 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="After copy, verify copied file sizes against source files.",
     )
+    parser.add_argument(
+        "--plan-only",
+        action="store_true",
+        help="Only scan local/host differences and print a sync plan without copying files.",
+    )
     return parser.parse_args()
+
+
+@dataclass(frozen=True)
+class SyncPlan:
+    total_files: int
+    total_bytes: int
+    new_files: int
+    duplicate_files: int
+    size_mismatch_files: int
+    new_bytes: int
+    duplicate_bytes: int
+    mismatch_bytes: int
 
 
 def validate_sync_args(args: argparse.Namespace) -> None:
@@ -143,6 +161,17 @@ def build_destination_path(source_file: Path, local_root: Path, destination_root
     return destination_root / source_file.relative_to(local_root)
 
 
+def format_bytes(num_bytes: int) -> str:
+    """Format byte counts for terminal reports."""
+    units = ["B", "KB", "MB", "GB", "TB"]
+    value = float(num_bytes)
+    for unit in units:
+        if value < 1024.0 or unit == units[-1]:
+            return f"{value:.2f} {unit}" if unit != "B" else f"{int(value)} B"
+        value /= 1024.0
+    return f"{num_bytes} B"
+
+
 def append_log(log_path: Path, message: str) -> None:
     """Append one timestamped line to sync_log.txt."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -163,6 +192,60 @@ def verify_file_size(source_file: Path, destination_file: Path) -> None:
             "Verification failed: file size mismatch | "
             f"{source_file} ({source_size} bytes) -> {destination_file} ({destination_size} bytes)"
         )
+
+
+def build_sync_plan(candidates: list[Path], local_root: Path, destination_root: Path) -> SyncPlan:
+    """Compare local files with destination files before copying."""
+    new_files = 0
+    duplicate_files = 0
+    size_mismatch_files = 0
+    total_bytes = 0
+    new_bytes = 0
+    duplicate_bytes = 0
+    mismatch_bytes = 0
+
+    for source_file in candidates:
+        destination_file = build_destination_path(source_file, local_root, destination_root)
+        source_size = source_file.stat().st_size
+        total_bytes += source_size
+        if not destination_file.exists():
+            new_files += 1
+            new_bytes += source_size
+            continue
+
+        destination_size = destination_file.stat().st_size
+        if destination_size == source_size:
+            duplicate_files += 1
+            duplicate_bytes += source_size
+        else:
+            size_mismatch_files += 1
+            mismatch_bytes += source_size
+
+    return SyncPlan(
+        total_files=len(candidates),
+        total_bytes=total_bytes,
+        new_files=new_files,
+        duplicate_files=duplicate_files,
+        size_mismatch_files=size_mismatch_files,
+        new_bytes=new_bytes,
+        duplicate_bytes=duplicate_bytes,
+        mismatch_bytes=mismatch_bytes,
+    )
+
+
+def print_sync_plan(plan: SyncPlan, *, overwrite: bool) -> None:
+    """Print a concise pre-sync report."""
+    planned_copy_bytes = plan.new_bytes + (plan.mismatch_bytes if overwrite else 0)
+    print("SYNC PLAN")
+    print(f"  total_files={plan.total_files} bytes={format_bytes(plan.total_bytes)}")
+    print(f"  new_files={plan.new_files} bytes={format_bytes(plan.new_bytes)}")
+    print(f"  duplicate_files={plan.duplicate_files} bytes={format_bytes(plan.duplicate_bytes)}")
+    print(f"  size_mismatch_files={plan.size_mismatch_files} bytes={format_bytes(plan.mismatch_bytes)}")
+    print(f"  planned_copy_bytes={format_bytes(planned_copy_bytes)}")
+    if plan.size_mismatch_files and not overwrite:
+        print("  note=size mismatches will be skipped unless --overwrite is used")
+    if plan.size_mismatch_files and overwrite:
+        print("  note=size mismatches will be overwritten")
 
 
 def sync_one_file(
@@ -232,6 +315,18 @@ def main() -> None:
     destination_root = host_root / args.date / args.experiment
     log_path = destination_root / "sync_log.txt"
 
+    candidates = iter_candidate_files(local_root, extensions)
+    if not candidates:
+        raise RuntimeError(
+            f"No supported files found under {local_root}. "
+            f"Supported extensions: {', '.join(sorted(extensions))}"
+        )
+
+    plan = build_sync_plan(candidates, local_root, destination_root)
+    print_sync_plan(plan, overwrite=args.overwrite)
+    if args.plan_only:
+        return None
+
     append_log(
         log_path,
         f"START local_root={local_root} destination_root={destination_root} "
@@ -242,13 +337,6 @@ def main() -> None:
     copied = 0
     skipped = 0
     verified = 0
-    candidates = iter_candidate_files(local_root, extensions)
-    if not candidates:
-        raise RuntimeError(
-            f"No supported files found under {local_root}. "
-            f"Supported extensions: {', '.join(sorted(extensions))}"
-        )
-
     for source_file in candidates:
         destination_file = build_destination_path(source_file, local_root, destination_root)
         result, copied_file = sync_one_file(
