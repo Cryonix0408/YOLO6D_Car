@@ -50,7 +50,11 @@ def validate_batch_manifest(args: argparse.Namespace) -> None:
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     root_dir = manifest_path.parents[1]
     local_paths = load_local_paths(args.paths_config) if args.paths_config else None
-    project_config = resolve_path(manifest.get("project_config", "configs/fzmotion_fixed_camera.yaml"), project_root=root_dir, local_paths=None)
+    project_config = resolve_path(
+        manifest.get("project_config", "configs/fzmotion_fixed_camera_current_rigids.yaml"),
+        project_root=root_dir,
+        local_paths=None,
+    )
     output_root = resolve_path(manifest.get("output_root", "outputs/auto_labels/batch_sessions"), project_root=root_dir, local_paths=local_paths)
     sessions = manifest.get("sessions", [])
     resolved_sessions = []
@@ -98,7 +102,11 @@ def main() -> None:
     root_dir = manifest_path.parents[1]
     local_paths = load_local_paths(args.paths_config) if args.paths_config else None
 
-    project_config = resolve_path(manifest.get("project_config", "configs/fzmotion_fixed_camera.yaml"), project_root=root_dir, local_paths=None)
+    project_config = resolve_path(
+        manifest.get("project_config", "configs/fzmotion_fixed_camera_current_rigids.yaml"),
+        project_root=root_dir,
+        local_paths=None,
+    )
     output_root = resolve_path(manifest.get("output_root", "outputs/auto_labels/batch_sessions"), project_root=root_dir, local_paths=local_paths)
     class_id = int(manifest.get("class_id", 0))
     min_inframe_keypoints = int(manifest.get("min_inframe_keypoints", 4))

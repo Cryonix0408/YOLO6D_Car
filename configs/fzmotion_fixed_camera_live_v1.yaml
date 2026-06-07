@@ -1,5 +1,6 @@
 ﻿# 实时推理配置。
-# 当前默认指向 20-session 正式 v1 的最佳权重，如需切换模型，只改 model_path 即可。
+# D455 最终实时配置，默认指向 20-session 正式 v1 最佳权重；如需切换模型，只改 model_path。
+# 海康相机应使用独立配置，勿直接修改本文件中的 D455 标定参数。
 
 camera:
   source: d455
@@ -65,5 +66,4 @@ output:
   print_json_lines: true
   show_window: true
   save_csv: outputs/live_pose_log_v1.csv
-
 

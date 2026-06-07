@@ -1,18 +1,22 @@
 camera:
   name: "hikrobot_mv_cs016_10uc"
+  backend: "hikvision_mvs"
   lens: "6mm"
   width: 1440
   height: 1080
   fps: 30
-  exposure_us: 10000
-  gain: 0
+  exposure_us: null
+  gain: null
   pixel_format: "BGR8"
+  mvs_python_path: "E:/MVS/Development/Samples/Python/MvImport"
 
 calibration_board:
   type: "chessboard"
-  pattern_cols: 9
-  pattern_rows: 6
-  square_size_mm: 25.0
+  # 黑白棋盘格为 17 x 11 个方格，因此内角点数量是 16 x 10。
+  # pattern_cols / pattern_rows 填内角点数量，不是方格数量。
+  pattern_cols: 16
+  pattern_rows: 10
+  square_size_mm: 20.0
 
 capture:
   auto_calibrate_when_enough_samples: true

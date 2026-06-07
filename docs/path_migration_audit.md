@@ -30,8 +30,6 @@ Raw filtered search hits: 360. Many hits were expected false positives or safe r
 | `configs/board_capture.yaml` | 49 | `outputs/fzmotion_pose_log.csv` | Yes | Keep as relative-to-data-root `outputs/fzmotion_pose_log.csv` when the script is run with `--paths-config`; otherwise use `G:/YOLO6D_Car_Data/outputs/fzmotion_pose_log.csv`. | Medium | Yes |
 | `configs/object_capture.yaml` | 16 | `D:\YOLO6D_Car\FZmotion_Data\Data 2026-03-26 15-52-58.csv` | Yes | Prefer relative-to-data-root `FZmotion_Data/Data 2026-03-26 15-52-58.csv` with `--paths-config`; or absolute G-drive path. | High | Yes |
 | `configs/object_capture.yaml` | 51 | `outputs/fzmotion_pose_log.csv` | Yes | Relative-to-data-root `outputs/fzmotion_pose_log.csv` with `--paths-config`; or absolute G-drive path. | Medium | Yes |
-| `configs/fzmotion_fixed_camera.yaml` | 18 | `D:\YOLO6D_Car\FZmotion_Data\Data 2026-03-26 15-52-58.csv` | Yes | Prefer relative-to-data-root `FZmotion_Data/Data 2026-03-26 15-52-58.csv` with `--paths-config`; or absolute G-drive path. | High | Yes |
-| `configs/fzmotion_fixed_camera.yaml` | 82 | `outputs/fzmotion_pose_log.csv` | Yes | Relative-to-data-root `outputs/fzmotion_pose_log.csv` with `--paths-config`; or absolute G-drive path. | Medium | Yes |
 | `configs/fzmotion_fixed_camera_current_rigids.yaml` | 15 | `D:\YOLO6D_Car\FZmotion_Data\current_rigids.csv` | Yes | Prefer relative-to-data-root `FZmotion_Data/current_rigids.csv` with `--paths-config`; or absolute G-drive path. | High | Yes |
 | `configs/fzmotion_fixed_camera_current_rigids.yaml` | 51 | `outputs/fzmotion_pose_log.csv` | Yes | Relative-to-data-root `outputs/fzmotion_pose_log.csv` with `--paths-config`; or absolute G-drive path. | Medium | Yes |
 | `configs/fzmotion_fixed_camera_live_v1.yaml` | 40 | `outputs/train_runs/uav_4m_20sessions_pose_v1/weights/best.pt` | Yes | Relative-to-data-root `outputs/train_runs/uav_4m_20sessions_pose_v1/weights/best.pt` with `--paths-config`; or absolute `G:/YOLO6D_Car_Data/outputs/train_runs/.../best.pt`. | High | Yes |
@@ -101,9 +99,8 @@ Additional low-risk runtime references:
 
 1. `configs/board_capture.yaml:16` old absolute `D:\YOLO6D_Car\FZmotion_Data\...` CSV path.
 2. `configs/object_capture.yaml:16` old absolute `D:\YOLO6D_Car\FZmotion_Data\...` CSV path.
-3. `configs/fzmotion_fixed_camera.yaml:18` old absolute mocap CSV path.
-4. `configs/fzmotion_fixed_camera_current_rigids.yaml:15` old absolute `current_rigids.csv` path.
-5. `configs/fzmotion_fixed_camera_live_v1.yaml:40` model weight path `outputs/train_runs/.../best.pt`.
+3. `configs/fzmotion_fixed_camera_current_rigids.yaml:15` old absolute `current_rigids.csv` path.
+4. `configs/fzmotion_fixed_camera_live_v1.yaml:40` model weight path `outputs/train_runs/.../best.pt`.
 6. `configs/fzmotion_fast_moving_live.yaml:41` model weight path `outputs/train_runs/.../best.pt`.
 7. `configs/uav_4m_20_sessions.yaml:13-166` repeated batch session `samples_dir` and `csv_path` entries.
 8. `configs/*capture*.yaml` and `configs/fzmotion*.yaml` `save_csv: outputs/...` log paths.

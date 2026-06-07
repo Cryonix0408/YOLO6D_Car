@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+import yaml
 from scipy.optimize import least_squares
 from scipy.spatial.transform import Rotation
 
@@ -66,7 +67,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--marker-length-mm', type=float, required=True)
     parser.add_argument('--marker-separation-mm', type=float, required=True)
     parser.add_argument('--dictionary', required=True)
+    parser.add_argument('--csv-path', default=None, help='Optional FzMotion CSV path. Overrides mocap.csv_path in config.')
+    parser.add_argument('--intrinsics-path', default=None, help='Optional camera intrinsics JSON/YAML path. If omitted, auto-detect from samples-dir or common calibration outputs.')
+    parser.add_argument('--timestamp-start-local-time', default=None, help='Optional local capture start time for camera_timestamps.csv, e.g. 2026-06-04T15:08:32.000.')
     parser.add_argument('--camera-init-config', default=None, help='Optional YAML whose mocap.T_camera_rigid_to_optical is used as initialization and soft prior.')
+    parser.add_argument('--no-camera-prior', action='store_true', help='Do not use camera extrinsic from config as initialization/prior. Use this after rebuilding the camera rigid body.')
     parser.add_argument('--camera-translation-prior-sigma-m', type=float, default=0.08, help='Soft prior sigma for camera extrinsic translation around the init value.')
     parser.add_argument('--camera-rotation-prior-sigma-deg', type=float, default=12.0, help='Soft prior sigma for camera extrinsic rotation around the init value.')
     parser.add_argument('--out', default=str(ROOT / 'outputs' / 'calibration' / 'camera_rigid_to_optical.json'))
@@ -74,8 +79,45 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_intrinsics(path: Path) -> CameraIntrinsics:
-    """读取采集时保存的 D455 彩色相机内参。"""
-    data = json.loads(path.read_text(encoding='utf-8'))
+    """读取采集时保存的相机内参，兼容旧 JSON、海康 YAML 和 calibration_summary.json。"""
+    if not path.exists():
+        raise FileNotFoundError(f'Camera intrinsics file not found: {path}')
+
+    if path.suffix.lower() in {'.yaml', '.yml'}:
+        data = yaml.safe_load(path.read_text(encoding='utf-8-sig'))
+    else:
+        data = json.loads(path.read_text(encoding='utf-8-sig'))
+
+    if 'camera_matrix' in data and isinstance(data['camera_matrix'], dict):
+        # 新的海康内参 YAML 格式。
+        camera_raw = data.get('camera', {})
+        matrix_raw = data['camera_matrix']
+        distortion_raw = data.get('distortion', {})
+        return CameraIntrinsics(
+            fx=float(matrix_raw['fx']),
+            fy=float(matrix_raw['fy']),
+            cx=float(matrix_raw['cx']),
+            cy=float(matrix_raw['cy']),
+            width=int(camera_raw['width']),
+            height=int(camera_raw['height']),
+            dist_coeffs=np.asarray(distortion_raw.get('vector', []), dtype=np.float64),
+        )
+
+    if 'camera_matrix' in data and isinstance(data['camera_matrix'], list):
+        # calibrate_hik_camera.py 生成的 calibration_summary.json 格式。
+        matrix = np.asarray(data['camera_matrix'], dtype=np.float64)
+        image_size = data['image_size']
+        return CameraIntrinsics(
+            fx=float(matrix[0, 0]),
+            fy=float(matrix[1, 1]),
+            cx=float(matrix[0, 2]),
+            cy=float(matrix[1, 2]),
+            width=int(image_size['width']),
+            height=int(image_size['height']),
+            dist_coeffs=np.asarray(data.get('distortion_coefficients', []), dtype=np.float64),
+        )
+
+    # 旧 D455 intrinsics.json 格式。
     return CameraIntrinsics(
         fx=float(data['fx']),
         fy=float(data['fy']),
@@ -84,6 +126,29 @@ def load_intrinsics(path: Path) -> CameraIntrinsics:
         width=int(data['width']),
         height=int(data['height']),
         dist_coeffs=np.asarray(data['dist_coeffs'], dtype=np.float64),
+    )
+
+
+def find_intrinsics_path(samples_dir: Path, explicit_path: str | None) -> Path:
+    """自动寻找外参求解要用的相机内参文件。"""
+    if explicit_path:
+        return Path(explicit_path).resolve()
+
+    candidates = [
+        samples_dir / 'intrinsics.json',
+        samples_dir / 'camera_intrinsics.yaml',
+        samples_dir / 'camera_intrinsics.yml',
+        ROOT / 'outputs' / 'calibration' / 'hik_6mm' / 'camera_intrinsics_hik_6mm.yaml',
+        Path('D:/CaptureData/outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml'),
+        Path('D:/CaptureData/outputs/calibration/hik_6mm/calibration_summary.json'),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate.resolve()
+
+    raise FileNotFoundError(
+        'No camera intrinsics file found. Pass --intrinsics-path explicitly, '
+        'for example D:\\CaptureData\\outputs\\calibration\\hik_6mm\\camera_intrinsics_hik_6mm.yaml'
     )
 
 
@@ -270,8 +335,79 @@ def _resolve_sample_timestamp_s(row: dict[str, str], mocap_start_dt: datetime | 
     return float(row['device_timestamp_s']), 'device_timestamp_s'
 
 
+def _load_capture_fps(samples_dir: Path) -> float | None:
+    """从海康采集 config.yaml 读取目标帧率，用于旧数据补时间戳。"""
+    config_path = samples_dir / 'config.yaml'
+    if not config_path.exists():
+        return None
+    data = yaml.safe_load(config_path.read_text(encoding='utf-8-sig')) or {}
+    capture = data.get('capture', {})
+    camera = data.get('camera', {})
+    for raw_value in (capture.get('target_fps'), camera.get('fps')):
+        if raw_value is not None:
+            return float(raw_value)
+    return None
+
+
+def _resolve_legacy_start_time(samples_dir: Path, explicit_start_time: str | None) -> datetime | None:
+    """为没有 saved_local_time 的旧海康采集估计本地采集开始时间。"""
+    if explicit_start_time:
+        return datetime.fromisoformat(explicit_start_time)
+
+    first_image = samples_dir / 'images' / '000001.png'
+    if first_image.exists():
+        # Windows 上 st_ctime 是创建时间；这比写入完成时间更接近第一帧采集时间。
+        return datetime.fromtimestamp(first_image.stat().st_ctime)
+
+    return None
+
+
+def load_sample_rows(samples_dir: Path, timestamp_start_local_time: str | None = None) -> tuple[list[dict[str, str]], str]:
+    """读取外参样本列表，兼容老 samples.csv 和海康 camera_timestamps.csv。"""
+    samples_csv = samples_dir / 'samples.csv'
+    if samples_csv.exists():
+        with samples_csv.open('r', encoding='utf-8-sig', newline='') as handle:
+            return list(csv.DictReader(handle)), 'samples.csv'
+
+    timestamps_csv = samples_dir / 'camera_timestamps.csv'
+    if timestamps_csv.exists():
+        rows: list[dict[str, str]] = []
+        capture_fps = _load_capture_fps(samples_dir)
+        legacy_start_dt = _resolve_legacy_start_time(samples_dir, timestamp_start_local_time)
+        with timestamps_csv.open('r', encoding='utf-8-sig', newline='') as handle:
+            for index, row in enumerate(csv.DictReader(handle)):
+                image_path = Path(row['image_path'])
+                if image_path.is_absolute():
+                    relative_image_path = image_path.relative_to(samples_dir) if image_path.is_relative_to(samples_dir) else image_path
+                else:
+                    relative_image_path = image_path
+                normalized_row = {
+                    'sample_index': str(index),
+                    'image_path': str(relative_image_path),
+                    'device_timestamp_s': row['timestamp'],
+                }
+                if row.get('saved_local_time'):
+                    normalized_row['saved_local_time'] = row['saved_local_time']
+                elif legacy_start_dt is not None and capture_fps is not None and capture_fps > 0:
+                    # 旧版海康采集没有本地时间。这里按 D455 的 saved_local_time 语义补齐：
+                    # 第一张图创建时间作为采集起点，再按固定 fps 推算每一帧时间。
+                    inferred_dt = legacy_start_dt.timestamp() + index / capture_fps
+                    normalized_row['saved_local_time'] = datetime.fromtimestamp(inferred_dt).isoformat(timespec='milliseconds')
+                if row.get('saved_unix_time_s'):
+                    normalized_row['saved_unix_time_s'] = row['saved_unix_time_s']
+                rows.append(
+                    normalized_row
+                )
+        return rows, 'camera_timestamps.csv'
+
+    raise FileNotFoundError(f'No samples.csv or camera_timestamps.csv found in: {samples_dir}')
+
+
 def _load_camera_init_transform(base_config, args: argparse.Namespace) -> np.ndarray | None:
     """从可选初始化配置或当前配置读取相机刚体外参初值。"""
+    if args.no_camera_prior:
+        return None
+
     if args.camera_init_config:
         init_config = load_config(args.camera_init_config)
         if init_config.mocap.camera_rigid_to_optical is None:
@@ -301,9 +437,14 @@ def main() -> None:
     """构建标定观测，联合优化相机外参和标定板刚体外参。"""
     args = parse_args()
     config = load_config(args.config)
-    provider = CSVRigidBodyProvider(config.mocap.csv_path)
+    csv_path = Path(args.csv_path).resolve() if args.csv_path else config.mocap.csv_path
+    if csv_path is None:
+        raise RuntimeError('Mocap csv_path is not configured. Pass --csv-path or set mocap.csv_path in config.')
+    provider = CSVRigidBodyProvider(csv_path)
     mocap_start_dt = _parse_fzmotion_start_time(provider.metadata.get('StartTime', ''))
-    intrinsics = load_intrinsics(Path(args.samples_dir) / 'intrinsics.json')
+    samples_dir = Path(args.samples_dir).resolve()
+    intrinsics_path = find_intrinsics_path(samples_dir, args.intrinsics_path)
+    intrinsics = load_intrinsics(intrinsics_path)
 
     dictionary = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, args.dictionary))
     if hasattr(cv2.aruco, 'GridBoard_create'):
@@ -323,38 +464,41 @@ def main() -> None:
         )
 
     observations: list[Observation] = []
-    with (Path(args.samples_dir) / 'samples.csv').open('r', encoding='utf-8', newline='') as handle:
-        for row in csv.DictReader(handle):
-            image_path = Path(args.samples_dir) / row['image_path']
-            timestamp, _ = _resolve_sample_timestamp_s(row, mocap_start_dt)
-            # 同一时刻必须同时拿到相机刚体、标定板刚体和视觉标定板检测。
-            world_camera_rigid = provider.get_pose(config.mocap.camera_rigid_body, timestamp, config.mocap.max_time_diff_s)
-            world_board_rigid = provider.get_pose(args.board_rigid_body, timestamp, config.mocap.max_time_diff_s)
-            if world_camera_rigid is None or world_board_rigid is None:
-                continue
+    sample_rows, sample_source = load_sample_rows(samples_dir, args.timestamp_start_local_time)
+    for row in sample_rows:
+        image_path = Path(row['image_path'])
+        if not image_path.is_absolute():
+            image_path = samples_dir / image_path
+        timestamp, _ = _resolve_sample_timestamp_s(row, mocap_start_dt)
+        # 同一时刻必须同时拿到相机刚体、标定板刚体和视觉标定板检测。
+        world_camera_rigid = provider.get_pose(config.mocap.camera_rigid_body, timestamp, config.mocap.max_time_diff_s)
+        world_board_rigid = provider.get_pose(args.board_rigid_body, timestamp, config.mocap.max_time_diff_s)
+        if world_camera_rigid is None or world_board_rigid is None:
+            continue
 
-            detection = detect_board_pose(image_path, intrinsics, dictionary, board)
-            if detection is None:
-                continue
+        detection = detect_board_pose(image_path, intrinsics, dictionary, board)
+        if detection is None:
+            continue
 
-            observations.append(
-                Observation(
-                    sample_index=int(row['sample_index']),
-                    image_path=image_path,
-                    mocap_timestamp_s=timestamp,
-                    world_camera_rigid=world_camera_rigid.as_matrix(),
-                    world_board_rigid=world_board_rigid.as_matrix(),
-                    camera_board_visual=detection.camera_board_visual,
-                    marker_count=detection.marker_count,
-                )
+        observations.append(
+            Observation(
+                sample_index=int(row['sample_index']),
+                image_path=image_path,
+                mocap_timestamp_s=timestamp,
+                world_camera_rigid=world_camera_rigid.as_matrix(),
+                world_board_rigid=world_board_rigid.as_matrix(),
+                camera_board_visual=detection.camera_board_visual,
+                marker_count=detection.marker_count,
             )
+        )
 
     if not observations:
         raise RuntimeError('No valid observations were built. Check images, CSV, rigid body names, and board parameters.')
 
-    camera_init_transform = _load_camera_init_transform(config, args)
-    board_init_transform = _estimate_board_init_transform(observations, camera_init_transform)
+    camera_prior_transform = _load_camera_init_transform(config, args)
+    board_init_transform = _estimate_board_init_transform(observations, camera_prior_transform)
 
+    camera_init_transform = camera_prior_transform
     if camera_init_transform is None:
         camera_init_transform = np.eye(4, dtype=np.float64)
 
@@ -366,7 +510,7 @@ def main() -> None:
         x0,
         args=(
             observations,
-            camera_init_transform,
+            camera_prior_transform,
             float(args.camera_translation_prior_sigma_m),
             np.deg2rad(float(args.camera_rotation_prior_sigma_deg)),
         ),
@@ -387,8 +531,11 @@ def main() -> None:
         'metadata': {
             'config': str(Path(args.config).resolve()),
             'camera_init_config': None if args.camera_init_config is None else str(Path(args.camera_init_config).resolve()),
-            'samples_dir': str(Path(args.samples_dir).resolve()),
-            'csv_path': str(Path(config.mocap.csv_path).resolve()),
+            'camera_prior_enabled': camera_prior_transform is not None,
+            'samples_dir': str(samples_dir),
+            'sample_source': sample_source,
+            'intrinsics_path': str(intrinsics_path),
+            'csv_path': str(Path(csv_path).resolve()),
             'camera_rigid_body': str(config.mocap.camera_rigid_body),
             'board_rigid_body': str(args.board_rigid_body),
             'markers_x': int(args.markers_x),

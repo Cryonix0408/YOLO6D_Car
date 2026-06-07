@@ -195,7 +195,14 @@ def main() -> None:
 
         with timestamps_path.open("w", newline="", encoding="utf-8") as csv_file:
             csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(["frame_id", "timestamp", "image_path"])
+            csv_writer.writerow([
+                "frame_id",
+                "timestamp",
+                "host_perf_counter_s",
+                "saved_unix_time_s",
+                "saved_local_time",
+                "image_path",
+            ])
 
             while captured < target_frames:
                 sleep_s = next_capture_perf - time.perf_counter()
@@ -203,10 +210,20 @@ def main() -> None:
                     time.sleep(min(sleep_s, period_s))
 
                 frame_id, timestamp, image = camera.get_frame()
+                host_perf_counter_s = time.perf_counter()
+                saved_unix_time_s = time.time()
+                saved_local_time = datetime.now().isoformat(timespec="milliseconds")
                 captured += 1
                 image_path = images_dir / f"{captured:06d}.png"
 
-                csv_writer.writerow([frame_id, f"{float(timestamp):.9f}", str(image_path)])
+                csv_writer.writerow([
+                    frame_id,
+                    f"{float(timestamp):.9f}",
+                    f"{host_perf_counter_s:.9f}",
+                    f"{saved_unix_time_s:.6f}",
+                    saved_local_time,
+                    str(image_path),
+                ])
                 write_queue.put((image_path, image))
 
                 next_capture_perf += period_s

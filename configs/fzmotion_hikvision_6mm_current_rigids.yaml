@@ -1,0 +1,83 @@
+# 海康 MV-CS016-10UC + 6mm 镜头专用 Mocap / YOLO6D 配置。
+# 本文件独立于 D455 配置，切勿用它覆盖 fzmotion_fixed_camera_current_rigids.yaml。
+#
+# 对应内参：
+# D:\CaptureData\outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml
+# 对应外参求解结果：
+# D:\CaptureData\outputs\calibration\hik_6mm\camera_rigid_to_optical_rebuild_001.json
+# 对应投影验证：
+# D:\CaptureData\outputs\calibration\hik_6mm\verification_rebuild_001
+
+camera:
+  source: hikvision_mvs
+  color_width: 1440
+  color_height: 1080
+  fps: 60
+  enable_depth: false
+  align_depth_to_color: false
+
+mocap:
+  enabled: true
+  mode: csv
+  # 离线标注时建议通过 --csv-path 显式指定每个 session 对应的 CSV。
+  csv_path: null
+  camera_rigid_body: Rigid1
+  object_rigid_body: Rigid0
+  max_time_diff_s: 0.03
+  time_offset_s: 0.0
+  camera_optical_frame: camera_optical
+  object_model_frame: car_model
+
+  # 2026-06-07 使用重新构建并调整质心后的 Rigid1/Rigid2 求解。
+  # 投影验证：900/900 有效，平均角点误差 3.57 px，
+  # 平均平移误差 2.82 mm，平均旋转误差 0.71 deg。
+  T_camera_rigid_to_optical:
+    translation_m: [0.006573095217983413, -0.03503067242648335, 0.056310267741847934]
+    quaternion_xyzw: [-0.0006126250905093182, -0.05012257370725518, 0.9980442832043718, 0.03734917748132005]
+
+  T_world_camera_optical: null
+  T_object_rigid_to_model:
+    translation_m: [0.0, 0.0, 0.0]
+    quaternion_xyzw: [0.0, 0.0, 0.0, 1.0]
+
+object_model:
+  label: car_model
+  keypoints_mode: custom
+  model_json_path: models/car_custom_keypoints_12_migrated_200xx_exact.json
+  include_center: false
+
+yolo6d:
+  backend: ultralytics_live
+  conf_threshold: 0.22
+  replay_json_path: null
+  model_path: outputs/train_runs/uav_4m_20sessions_pose_v1/weights/best.pt
+  inference_imgsz: 640
+  inference_device: "0"
+  replay_timestamp_tolerance_s: 0.05
+  roi_tracker:
+    enabled: true
+    expand_ratio: 3.0
+    min_size_px: 160
+    full_frame_interval: 5
+    max_missed_frames: 1
+    square_crop: true
+    predict_motion: true
+    velocity_alpha: 0.70
+    max_prediction_frames: 4
+  temporal_filter:
+    enabled: true
+    translation_alpha: 0.75
+    rotation_alpha: 0.65
+    max_translation_jump_m: 0.80
+    max_angle_jump_deg: 75.0
+    hold_last_frames: 1
+  pnp:
+    ransac_reproj_threshold_px: 6.0
+    iterations_count: 100
+    confidence: 0.99
+    min_keypoint_score: 0.15
+
+output:
+  print_json_lines: true
+  show_window: true
+  save_csv: outputs/hikvision_6mm_pose_log.csv

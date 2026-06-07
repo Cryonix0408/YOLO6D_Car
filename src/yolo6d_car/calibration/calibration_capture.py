@@ -77,13 +77,61 @@ class OpenCVCameraSource:
             self.cap = None
 
 
-def create_camera_source(camera_config: dict[str, Any]) -> OpenCVCameraSource:
+class HikvisionMVSCameraSource:
+    """Hikvision MVS SDK camera source used by industrial-camera calibration."""
+
+    def __init__(self, camera_config: dict[str, Any]) -> None:
+        self.camera_config = camera_config
+        self.camera = None
+
+    def start(self) -> None:
+        """Open the Hikvision camera through the same backend used by sequence capture."""
+        from yolo6d_car.camera.hikvision_camera import HikvisionCamera
+
+        pixel_format = self.camera_config.get("pixel_format")
+        if pixel_format is not None and str(pixel_format).lower() == "auto":
+            pixel_format = None
+
+        self.camera = HikvisionCamera(
+            device_index=int(self.camera_config.get("device_index", 0)),
+            exposure_time_us=self.camera_config.get("exposure_us"),
+            exposure_auto=None if self.camera_config.get("exposure_us") is not None else "continuous",
+            gain_db=self.camera_config.get("gain"),
+            gain_auto=None if self.camera_config.get("gain") is not None else "continuous",
+            frame_rate=self.camera_config.get("fps"),
+            width=self.camera_config.get("width"),
+            height=self.camera_config.get("height"),
+            pixel_format=pixel_format,
+            mvs_python_path=self.camera_config.get("mvs_python_path"),
+        )
+        self.camera.open()
+        self.camera.start()
+
+    def read(self) -> np.ndarray:
+        """Read one BGR frame from the Hikvision backend."""
+        if self.camera is None:
+            raise RuntimeError("Camera source has not been started.")
+        _frame_id, _timestamp, image = self.camera.get_frame()
+        return image
+
+    def stop(self) -> None:
+        """Stop and close the Hikvision camera."""
+        if self.camera is not None:
+            self.camera.stop()
+            self.camera.close()
+            self.camera = None
+
+
+def create_camera_source(camera_config: dict[str, Any]) -> OpenCVCameraSource | HikvisionMVSCameraSource:
     """Create a camera source.
 
-    This baseline uses OpenCV VideoCapture as the safe fallback. A future Hik SDK
-    implementation can be added behind the same interface without changing the
-    calibration workflow.
+    Hikrobot/Hikvision industrial cameras should use the MVS backend. OpenCV is
+    kept only as a fallback for webcams or quick local tests.
     """
+    backend = str(camera_config.get("backend", "")).lower()
+    name = str(camera_config.get("name", "")).lower()
+    if backend in {"hikvision_mvs", "mvs"} or "hik" in name or "mv-cs" in name:
+        return HikvisionMVSCameraSource(camera_config)
     return OpenCVCameraSource(camera_config)
 
 

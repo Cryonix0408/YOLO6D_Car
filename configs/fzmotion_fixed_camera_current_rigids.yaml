@@ -1,5 +1,6 @@
 ﻿# 当前离线标注 / 回放配置。
-# 主要用于 generate_mocap_labels.py、回放调试和外参验证。
+# D455 最终离线配置，主要用于 generate_mocap_labels.py、回放调试和外参验证。
+# 海康 6mm 请使用 fzmotion_hikvision_6mm_current_rigids.yaml，勿覆盖本文件。
 
 camera:
   source: d455

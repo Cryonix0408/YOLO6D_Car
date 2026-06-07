@@ -1,0 +1,48 @@
+# 海康 MV-CS016-10UC 采集参数参考。
+# 这些参数用于 collect_hikvision_sequence.py 的命令行，不会覆盖 D455 配置。
+#
+# 判断保存图像亮度时，请使用原图/raw_mean。
+# preview_gain 和 preview_gamma 只改变预览窗口，不改变保存图片。
+
+presets:
+  extrinsic_calibration:
+    description: "外参标定板采集。允许稍长曝光，以确保 ArUco 稳定识别。"
+    fps: 15
+    exposure_us: 7000
+    gain_db: 10
+    preview_gain: 1.4
+    preview_gamma: 1.2
+    pixel_format: BGR8
+
+  normal_motion:
+    description: "正常速度采集起始参数。现场偏暗时优先补光。"
+    fps: 60
+    exposure_us: 5000
+    gain_db: 14
+    preview_gain: 1.0
+    preview_gamma: 1.0
+    pixel_format: BGR8
+
+  low_light_motion:
+    description: "低光照实验参数。仅用于专门的低光条件 session。"
+    fps: 60
+    exposure_us: 6000
+    gain_db: 17
+    preview_gain: 1.0
+    preview_gamma: 1.0
+    pixel_format: BGR8
+
+  fast_moving:
+    description: "高速运动采集起始参数。短曝光优先，需要现场补光。"
+    fps: 60
+    exposure_us: 3500
+    gain_db: 16
+    preview_gain: 1.0
+    preview_gamma: 1.0
+    pixel_format: BGR8
+
+notes:
+  - "正式采集使用固定曝光和固定增益，避免自动曝光造成连续帧亮度跳变。"
+  - "小车区域亮度均值建议约 50-100，同时确认轮廓、轮胎和车架细节清晰。"
+  - "高速运动出现拖影时先降低 exposure_us；画面变暗应优先增加现场照明。"
+  - "外参标定采集可以偏暗，只要 ArUco 检测稳定；该曝光不代表正式运动采集曝光。"
