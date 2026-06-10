@@ -1,0 +1,9 @@
+# RealSense D455 推荐相机配置。保留 RGB、Depth 和深度对齐能力。
+camera:
+  source: d455
+  lens: integrated
+  width: 1280
+  height: 720
+  fps: 15
+  enable_depth: true
+  align_depth_to_color: true

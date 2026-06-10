@@ -31,6 +31,10 @@
 
 ## 文档导航
 
+- 相机统一架构与本机实际路径：
+  [docs/camera_architecture_zh.md](./docs/camera_architecture_zh.md)
+- 相机配置迁移说明：
+  [docs/camera_config_migration_zh.md](./docs/camera_config_migration_zh.md)
 - 总体架构与流程：
   [docs/project_guide.md](./docs/project_guide.md)
 - 接手清单：
@@ -53,6 +57,19 @@
   [docs/live_inference.md](./docs/live_inference.md)
 - 高速运动跟踪与位姿估计：
   [docs/fast_moving_tracking.md](./docs/fast_moving_tracking.md)
+
+## 相机架构说明
+
+当前项目保留原有 D455 与 Hikrobot 底层实现，并新增统一相机适配层：
+
+- `src/yolo6d_car/camera/base_camera.py`：统一 `BaseCamera` 与 `CameraFrame`
+- `src/yolo6d_car/camera/factory.py`：根据配置创建 D455、Hikrobot 或 Webcam
+- `src/yolo6d_car/camera/hikvision_stream.py`：海康 MVS 后端适配器
+- `src/yolo6d_car/camera/webcam.py`：普通 USB 摄像头适配器
+
+采集笔记本当前实际项目路径为 `D:\YOLO6D_Car`，大数据根目录为
+`D:\CaptureData`，应使用 `configs\paths_laptop.yaml`。下方工作站路径仅用于
+主机部署示例，不应直接复制到采集笔记本命令中。
 
 ## New workstation setup: code on D drive, data on G drive
 

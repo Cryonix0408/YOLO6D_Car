@@ -1,19 +1,9 @@
-"""本文件作用：
-    手动或自动采集小车/目标图像，适合一个人移动小车时自动保存样本。
+r"""手动或自动采集小车目标图像。
 
-在 YOLO6D_Car pipeline 中的位置：
-    capture 阶段。它产生后续自动标签、dataset 构建和训练所需的原始图片与 metadata。
-
-主要输入：
-    configs/object_capture_auto.yaml，D455/海康/webcam 图像流。
-
-主要输出：
-    G:\YOLO6D_Car_Data\captures\<date>\<session_name>\ 下的 images、metadata、
-    capture_index.csv 和 capture_report.md。
-
-注意事项：
-    自动采集不会盲目保存每帧，而是根据 blur_score、scene_change、stable frames
-    和 waiting_for_scene_change 状态避免重复保存同一位置。
+自动模式通过统一相机工厂支持 D455、Hikrobot 和 Webcam，并根据清晰度、场景变化
+和稳定帧数量避免重复保存同一位置。采集笔记本应配合
+``configs\paths_laptop.yaml`` 使用，输出通常位于
+``D:\CaptureData\<date>\<session_name>``。实际输出根目录始终以传入的路径配置为准。
 """
 
 from __future__ import annotations
@@ -56,6 +46,7 @@ from capture_board_samples import (  # noqa: E402
     _save_session_info,
 )
 from yolo6d_car.camera.d455 import D455Stream  # noqa: E402
+from yolo6d_car.camera.factory import create_camera, validate_camera_config  # noqa: E402
 from yolo6d_car.config import CameraConfig, load_config  # noqa: E402
 from yolo6d_car.path_utils import load_local_paths, resolve_path  # noqa: E402
 from yolo6d_car.types import CameraIntrinsics, ImageFrame  # noqa: E402
@@ -241,8 +232,7 @@ def validate_auto_config(config: AutoCaptureConfig) -> list[str]:
         raise ValueError("camera.source must be one of: d455, hikrobot, webcam")
     if int(config.capture["target_samples"]) <= 0:
         raise ValueError("capture.target_samples must be > 0")
-    if str(config.camera["source"]).lower() == "hikrobot":
-        warnings.append("Hikrobot live capture is not implemented in this script yet; validate/dry-run are still supported.")
+    warnings.extend(validate_camera_config(config.camera))
     return warnings
 
 
@@ -564,28 +554,17 @@ def write_capture_report(output_dir: Path, config: AutoCaptureConfig, state: Aut
 
 
 def build_frame_source(config: AutoCaptureConfig, *, dry_run: bool):
-    """Create camera or synthetic frame source."""
+    """创建相机或合成帧源。
+
+    真实相机统一交给 camera.factory 创建，自动采集判定与保存逻辑无需关心品牌。
+    validate-config 只做结构检查，因此不会依赖真实相机或 SDK 当前在线。
+    """
     width = int(config.camera["width"])
     height = int(config.camera["height"])
     fps = int(config.camera["fps"])
-    source = str(config.camera["source"]).lower()
     if dry_run:
         return SyntheticFrameSource(width, height, fps)
-    if source == "d455":
-        camera_config = CameraConfig(
-            source="d455",
-            color_width=width,
-            color_height=height,
-            fps=fps,
-            enable_depth=bool(config.camera["enable_depth"]),
-            align_depth_to_color=bool(config.camera["align_depth_to_color"]),
-        )
-        return D455Stream(camera_config)
-    if source == "webcam":
-        return WebcamFrameSource(width, height, fps)
-    if source == "hikrobot":
-        raise RuntimeError("Hikrobot camera not found or Hikrobot live capture backend is not implemented in this script yet.")
-    raise RuntimeError(f"Unsupported camera source: {source}")
+    return create_camera(config.camera)
 
 
 def run_auto_capture(args: argparse.Namespace) -> None:

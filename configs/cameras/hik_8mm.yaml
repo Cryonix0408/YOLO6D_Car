@@ -1,0 +1,22 @@
+# Hikrobot MV-CS016-10UC + 8mm 镜头。
+# 更换镜头或重新调焦后，必须重新标定内参。
+camera:
+  source: hikrobot
+  lens: 8mm
+  device_index: 0
+  width: 1440
+  height: 1080
+  fps: 60
+  enable_depth: false
+  align_depth_to_color: false
+  exposure_time_us: 5000
+  exposure_auto: "off"
+  gain_db: 14
+  gain_auto: "off"
+  gamma: 1.0
+  white_balance: "continuous"
+  trigger_mode: "off"
+  pixel_format: BGR8
+  grab_timeout_ms: 1000
+  mvs_python_path: "E:/MVS/Development/Samples/Python/MvImport"
+  intrinsics_path: "D:/CaptureData/outputs/calibration/hik_8mm/camera_intrinsics_hik_8mm.yaml"

@@ -1,0 +1,43 @@
+camera:
+  source: hikrobot
+  lens: 8mm
+  device_index: 0
+  width: 1440
+  height: 1080
+  fps: 60
+  enable_depth: false
+  align_depth_to_color: false
+  exposure_time_us: 5000
+  exposure_auto: "off"
+  gain_db: 14
+  gain_auto: "off"
+  gamma: 1.0
+  white_balance: "continuous"
+  trigger_mode: "off"
+  pixel_format: BGR8
+  mvs_python_path: "E:/MVS/Development/Samples/Python/MvImport"
+  intrinsics_path: "D:/CaptureData/outputs/calibration/hik_8mm/camera_intrinsics_hik_8mm.yaml"
+
+capture:
+  mode: auto
+  session_name: hik_8mm_car_auto_001
+  object_name: car
+  target_samples: 500
+  min_time_between_samples_s: 0.5
+  stable_frames_required: 5
+  blur_threshold: 80.0
+  frame_difference_threshold: 8.0
+  min_scene_change_score: 0.05
+  save_rgb: true
+  save_depth: false
+  save_preview: true
+  save_metadata: true
+  auto_stop_when_target_reached: true
+
+output:
+  root: captures
+  date_format: "%Y-%m-%d"
+
+mocap:
+  enabled: false
+  csv_path: null

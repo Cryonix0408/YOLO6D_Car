@@ -1,0 +1,32 @@
+camera:
+  source: d455
+  lens: integrated
+  width: 1280
+  height: 720
+  fps: 15
+  enable_depth: true
+  align_depth_to_color: true
+
+capture:
+  mode: auto
+  session_name: d455_car_auto_001
+  object_name: car
+  target_samples: 500
+  min_time_between_samples_s: 1.0
+  stable_frames_required: 5
+  blur_threshold: 80.0
+  frame_difference_threshold: 8.0
+  min_scene_change_score: 0.05
+  save_rgb: true
+  save_depth: false
+  save_preview: true
+  save_metadata: true
+  auto_stop_when_target_reached: true
+
+output:
+  root: captures
+  date_format: "%Y-%m-%d"
+
+mocap:
+  enabled: false
+  csv_path: null

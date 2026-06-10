@@ -1,0 +1,19 @@
+# D455 RGB 内参标定模板。D455 通常可直接读取设备内参，本文件用于复核或重标定。
+camera:
+  source: d455
+  lens: integrated
+  width: 1280
+  height: 720
+  fps: 15
+  enable_depth: false
+  align_depth_to_color: false
+
+calibration_board:
+  type: chessboard
+  pattern_cols: 16
+  pattern_rows: 10
+  square_size_mm: 20.0
+
+output:
+  root: outputs/calibration
+  session_name: d455_rgb
