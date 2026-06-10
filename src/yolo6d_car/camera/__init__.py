@@ -2,7 +2,7 @@
 
 from .base_camera import BaseCamera, CameraFrame
 from .d455 import D455Stream
-from .factory import create_camera, validate_camera_config
+from .factory import create_camera, resolve_camera_config_paths, validate_camera_config
 from .hikvision_camera import HikvisionCamera
 from .hikvision_stream import HikvisionStream
 from .webcam import WebcamCamera
@@ -15,5 +15,6 @@ __all__ = [
     "HikvisionStream",
     "WebcamCamera",
     "create_camera",
+    "resolve_camera_config_paths",
     "validate_camera_config",
 ]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from .base_camera import BaseCamera, CameraFrame
@@ -9,6 +10,7 @@ from .d455 import D455Stream
 from .hikvision_stream import HikvisionStream
 from .webcam import WebcamCamera
 from ..config import CameraConfig
+from ..path_utils import LocalPaths, resolve_path
 from ..types import CameraIntrinsics
 
 
@@ -72,6 +74,30 @@ def normalize_source(source: str) -> str:
     """统一相机来源别名。"""
     value = source.strip().lower()
     return {"realsense": "d455", "hikvision": "hikrobot", "hikvision_mvs": "hikrobot"}.get(value, value)
+
+
+def resolve_camera_config_paths(
+    config: dict[str, Any],
+    *,
+    project_root: Path,
+    local_paths: LocalPaths | None = None,
+) -> dict[str, Any]:
+    """解析相机配置中的文件路径，同时保留旧绝对路径兼容性。
+
+    推荐在 YAML 中把 Hikrobot 内参写成 ``outputs/calibration/...``。传入
+    ``paths-config`` 后，该相对路径会跟随当前机器的 ``outputs_root``；
+    已有 Windows/POSIX 绝对路径则由 ``resolve_path`` 原样保留。
+    """
+    resolved = dict(config)
+    intrinsics_path = resolve_path(
+        config.get("intrinsics_path"),
+        project_root=project_root,
+        local_paths=local_paths,
+    )
+    if intrinsics_path is not None:
+        # 配置字典会进入 validate JSON，因此保存为可序列化字符串。
+        resolved["intrinsics_path"] = str(intrinsics_path)
+    return resolved
 
 
 def validate_camera_config(config: dict[str, Any]) -> list[str]:

@@ -19,4 +19,4 @@ camera:
   pixel_format: BGR8
   grab_timeout_ms: 1000
   mvs_python_path: "E:/MVS/Development/Samples/Python/MvImport"
-  intrinsics_path: "D:/CaptureData/outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+  intrinsics_path: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"

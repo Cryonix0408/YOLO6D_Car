@@ -57,6 +57,9 @@ Hikrobot 的 `depth` 始终为 `None`；具体差异通过 `camera_type`、`lens
 capture_object_samples.py
         |
         v
+camera.factory.resolve_camera_config_paths(camera_config, paths_config)
+        |
+        v
 camera.factory.create_camera(camera_config)
         |
         +-- D455CameraAdapter -> D455Stream
@@ -68,6 +71,10 @@ CameraFrame
 ```
 
 `validate-config` 只检查配置结构，不会打开相机、枚举设备或要求 SDK 在线。
+
+Hikrobot 的 `intrinsics_path` 推荐写成 `outputs/calibration/...`。统一 factory
+会在校验和创建相机之前，根据当前机器传入的 `paths-config` 将其解析到对应的
+`outputs_root`。旧绝对路径仍可继续使用；未生成内参文件时校验只输出 warning。
 
 ## 兼容性
 

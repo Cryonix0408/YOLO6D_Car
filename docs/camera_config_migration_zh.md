@@ -67,6 +67,27 @@ python .\scripts\capture_object_samples.py --config .\configs\capture\hik_8mm_ob
 4. 标定配置只描述标定板和相机参数，采集配置只描述 session 与保存策略。
 5. 没有完成投影验证的外参不得标记为最终配置。
 
+## Hikrobot 内参路径规则
+
+推荐在 Hikrobot 配置中使用相对 `data_root` 的路径：
+
+```yaml
+camera:
+  intrinsics_path: "outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml"
+```
+
+`capture_object_samples.py` 会先读取 `--paths-config`，再通过统一路径工具解析
+`intrinsics_path`。因此同一份采集配置可以跨机器使用：
+
+| 路径配置 | 6mm 内参解析结果 |
+|---|---|
+| `configs/paths_local.yaml` | `G:\YOLO6D_Car_Data\outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml` |
+| `configs/paths_laptop.yaml` | `D:\CaptureData\outputs\calibration\hik_6mm\camera_intrinsics_hik_6mm.yaml` |
+
+历史配置中的绝对路径仍然兼容，但会固定到指定机器，不推荐用于新的跨机器配置。
+`--validate-config` 输出的 `camera.intrinsics_path` 是解析后的实际路径；文件尚未
+生成时只给出 warning，不会连接相机或使校验失败。
+
 ## 当前仍需真实硬件验证
 
 - Hikrobot 6mm/8mm 的实际曝光、增益、Gamma 和白平衡效果。

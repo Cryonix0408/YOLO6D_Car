@@ -46,7 +46,7 @@ from capture_board_samples import (  # noqa: E402
     _save_session_info,
 )
 from yolo6d_car.camera.d455 import D455Stream  # noqa: E402
-from yolo6d_car.camera.factory import create_camera, validate_camera_config  # noqa: E402
+from yolo6d_car.camera.factory import create_camera, resolve_camera_config_paths, validate_camera_config  # noqa: E402
 from yolo6d_car.config import CameraConfig, load_config  # noqa: E402
 from yolo6d_car.path_utils import load_local_paths, resolve_path  # noqa: E402
 from yolo6d_car.types import CameraIntrinsics, ImageFrame  # noqa: E402
@@ -183,12 +183,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_auto_config(config_path: str | Path) -> AutoCaptureConfig:
-    """Load auto-capture YAML."""
+def load_auto_config(config_path: str | Path, paths_config: str | Path | None = None) -> AutoCaptureConfig:
+    """Load auto-capture YAML and resolve camera file paths for this machine."""
     path = Path(config_path).resolve()
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    local_paths = load_local_paths(paths_config) if paths_config is not None else None
+    camera = resolve_camera_config_paths(
+        dict(raw.get("camera", {})),
+        project_root=ROOT,
+        local_paths=local_paths,
+    )
     return AutoCaptureConfig(
-        camera=dict(raw.get("camera", {})),
+        camera=camera,
         capture=dict(raw.get("capture", {})),
         output=dict(raw.get("output", {})),
         mocap=dict(raw.get("mocap", {})),
@@ -257,7 +263,7 @@ def validate_object_capture_config(args: argparse.Namespace) -> None:
     """Validate config without opening a real camera."""
     config_path = Path(args.config).resolve()
     if is_auto_config(config_path):
-        config = load_auto_config(config_path)
+        config = load_auto_config(config_path, args.paths_config)
         warnings = validate_auto_config(config)
         output_dir = resolve_auto_output_dir(config, args)
         payload = {
@@ -572,7 +578,7 @@ def run_auto_capture(args: argparse.Namespace) -> None:
     if not args.dry_run and args.paths_config is None:
         raise SystemExit("Auto capture writes large data; pass --paths-config configs\\paths_local.yaml so output resolves to data_root.")
     config_path = Path(args.config).resolve()
-    config = load_auto_config(config_path)
+    config = load_auto_config(config_path, args.paths_config)
     validate_auto_config(config)
     output_dir = resolve_auto_output_dir(config, args)
     state = AutoCaptureState()

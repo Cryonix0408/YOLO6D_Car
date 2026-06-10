@@ -67,6 +67,12 @@
 - `src/yolo6d_car/camera/hikvision_stream.py`：海康 MVS 后端适配器
 - `src/yolo6d_car/camera/webcam.py`：普通 USB 摄像头适配器
 
+Hikrobot 6mm/8mm 配置中的内参路径推荐写成
+`outputs/calibration/<lens>/camera_intrinsics_<lens>.yaml`。运行采集或
+`--validate-config` 时，该路径会根据传入的 `configs/paths_local.yaml` 或
+`configs/paths_laptop.yaml` 分别解析到主机 G 盘或采集笔记本 `D:\CaptureData`；
+历史绝对路径仍保持兼容。
+
 采集笔记本当前实际项目路径为 `D:\YOLO6D_Car`，大数据根目录为
 `D:\CaptureData`，应使用 `configs\paths_laptop.yaml`。下方工作站路径仅用于
 主机部署示例，不应直接复制到采集笔记本命令中。

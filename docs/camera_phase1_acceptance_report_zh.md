@@ -259,3 +259,20 @@ D:\CaptureData\2026-06-10\hik_8mm_car_auto_001
 4. 在使用 8mm 镜头前完成独立内参标定，不允许复用 6mm 内参。
 5. 真实硬件验证通过后，再进入第二阶段的数据采集与模型流程验证。
 
+## 13. 主机/笔记本 Hikrobot 内参路径修复补充
+
+Hikrobot 6mm/8mm 采集配置已改为使用相对 `data_root` 的内参路径：
+
+```text
+outputs/calibration/hik_6mm/camera_intrinsics_hik_6mm.yaml
+outputs/calibration/hik_8mm/camera_intrinsics_hik_8mm.yaml
+```
+
+运行 `capture_object_samples.py --validate-config` 时，会根据 `--paths-config`
+显示解析后的实际路径：
+
+- 主机 `configs/paths_local.yaml`：解析到 `G:\YOLO6D_Car_Data\outputs\calibration\...`
+- 笔记本 `configs/paths_laptop.yaml`：解析到 `D:\CaptureData\outputs\calibration\...`
+
+旧绝对路径配置保持兼容。内参文件缺失仍属于预期 warning，不影响离线配置验收。
+
