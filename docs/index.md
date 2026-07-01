@@ -7,6 +7,7 @@
 - [README.md](../README.md)：项目主入口，包含当前推荐版本、总体链路和常用文档入口。
 - [docs/project_guide.md](project_guide.md)：项目整体流程说明，适合第一次接手时从头读。
 - [docs/common_commands.md](common_commands.md)：常用命令集合，适合实验现场快速复制。
+- [docs/project_conventions_zh.md](project_conventions_zh.md)：Codex / AI agent 工程文件结构规约，用于约束后续新增文件、配置、脚本和文档的位置。
 
 ## 环境与路径
 
