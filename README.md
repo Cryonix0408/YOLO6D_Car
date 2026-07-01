@@ -29,6 +29,16 @@
 - 当前实时推理配置模板：
   [fzmotion_fixed_camera_live_v1.yaml](./configs/fzmotion_fixed_camera_live_v1.yaml)
 
+## 当前推荐入口
+
+- 文档总入口：[docs/index.md](./docs/index.md)
+- 常用命令：[docs/common_commands.md](./docs/common_commands.md)
+- 笔记本采集流程：[docs/laptop_lab_capture_workflow.md](./docs/laptop_lab_capture_workflow.md)
+- 相机架构：[docs/camera_architecture_zh.md](./docs/camera_architecture_zh.md)
+- 标定流程：[docs/calibration_guide.md](./docs/calibration_guide.md)
+- 训练流程：[docs/training_guide.md](./docs/training_guide.md)
+- 评估流程：[docs/mocap_gt_evaluation.md](./docs/mocap_gt_evaluation.md)
+
 ## 文档导航
 
 - 相机统一架构与本机实际路径：
@@ -315,3 +325,11 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 当前完成状态：离线工程骨架基本完成，smoke replay / fixed KF / reliability-aware KF / ablation 小样例已建立；真实实验数据仍缺失，包括 Hikrobot 6mm/8mm 标定、真实 captures、FzMotion CSV、auto labels、dataset、train runs、best.pt、gt_pose.csv。
 
 回实验室后优先顺序：先跑 readiness 和 validate-config，再完成 Hikrobot 镜头标定，然后采集 static / slow lateral / fast lateral 三个最小真实 session；每个 session 先做 capture quality、mocap quality、自动标签和标签可视化，overlay 正常后再构建 dataset 和训练。
+
+## 离线色彩校正实验
+
+- 工具：`scripts/test_color_correction.py`
+- 配置：`configs/color_correction/rgb_wall_reference.yaml`
+- 文档：[docs/color_correction_zh.md](./docs/color_correction_zh.md)
+
+该工具利用图像中的红、绿、蓝参考区域离线测试 Gamma、HSV-V、RGB channel gain 和 3x3 CCM。它当前只用于实验验证，不接入正式采集 pipeline，也不能替代补光灯。

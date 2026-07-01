@@ -4,7 +4,7 @@ __pycache__/
 outputs/
 captures/
 results/
-logs/
+/logs/
 .vscode/
 .idea/
 .idea/workspace.xml
@@ -19,6 +19,7 @@ $profilePath.bak_*
 
 # Large generated data
 FZmotion_Data/
+/CaptureData/
 data/real/
 data/synthetic/
 !data/examples/
@@ -33,6 +34,10 @@ data/synthetic/
 # Captured media / temporary files
 *.mp4
 *.avi
+*.jpg
+*.jpeg
+*.png
+*.bmp
 *.bag
 *.npy
 *.npz
@@ -40,3 +45,4 @@ data/synthetic/
 *.mkv
 *.log
 *.tmp
+.pytest_cache/
