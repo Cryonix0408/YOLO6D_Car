@@ -1,0 +1,42 @@
+dataset:
+  name: "car_pose_12pts_v1"
+  version: "v1"
+  task: "pose"
+  keypoints: 12
+  object: "car"
+  description: "YOLO Pose dataset for small car 12-keypoint 6DoF pose estimation"
+  data_root: "G:/YOLO6D_Car_Data"
+
+source_sessions:
+  manifest: "configs/session_manifest_template.yaml"
+  include_splits:
+    - train
+    - val
+    - test
+
+paths:
+  dataset_root: "outputs/datasets/car_pose_12pts_v1"
+  images_train: "outputs/datasets/car_pose_12pts_v1/images/train"
+  images_val: "outputs/datasets/car_pose_12pts_v1/images/val"
+  images_test: "outputs/datasets/car_pose_12pts_v1/images/test"
+  labels_train: "outputs/datasets/car_pose_12pts_v1/labels/train"
+  labels_val: "outputs/datasets/car_pose_12pts_v1/labels/val"
+  labels_test: "outputs/datasets/car_pose_12pts_v1/labels/test"
+  data_yaml: "outputs/datasets/car_pose_12pts_v1/dataset.yaml"
+
+yolo:
+  nc: 1
+  names:
+    0: "car"
+  kpt_shape: [12, 3]
+  flip_idx: []
+
+splits:
+  train_ratio: 0.7
+  val_ratio: 0.15
+  test_ratio: 0.15
+  split_by: "session"
+
+metadata:
+  created_by: "Yiyang"
+  notes: "Template only. Real data should be generated from mocap auto labels."

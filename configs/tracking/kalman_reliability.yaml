@@ -1,0 +1,57 @@
+kalman:
+  enabled: true
+  mode: "reliability_aware"
+  state_dim: 12
+  measurement_dim: 6
+  default_fps: 30.0
+
+  position_process_noise: 0.01
+  velocity_process_noise: 0.1
+  rotation_process_noise: 0.01
+  angular_velocity_process_noise: 0.1
+
+  base_position_measurement_noise: 0.005
+  base_rotation_measurement_noise: 0.02
+
+  max_missing_frames: 10
+
+reliability:
+  enabled: true
+
+  confidence:
+    enabled: true
+    min_confidence: 0.30
+    default_confidence: 1.0
+    weight: 1.0
+
+  reprojection_error:
+    enabled: true
+    good_px: 3.0
+    bad_px: 8.0
+    reject_px: 15.0
+    default_px: 0.0
+    weight: 1.5
+
+  blur:
+    enabled: false
+    good_score: 120.0
+    bad_score: 60.0
+    default_score: 120.0
+    weight: 0.5
+
+  pose_jump:
+    enabled: true
+    translation_bad_m: 0.30
+    rotation_bad_rad: 1.0
+    reject_translation_m: 0.80
+    reject_rotation_rad: 2.5
+    weight: 1.0
+
+  dynamic_R:
+    min_scale: 0.5
+    max_scale: 50.0
+
+  gating:
+    reject_low_confidence: true
+    reject_high_reprojection_error: true
+    reject_large_pose_jump: true

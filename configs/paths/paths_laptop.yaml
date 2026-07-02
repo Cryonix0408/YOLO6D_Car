@@ -1,0 +1,14 @@
+# Local path config for the capture laptop.
+#
+# Use this file when collecting data on the laptop.
+# Large capture sessions should stay under D:/CaptureData first, then sync to
+# the workstation share Z:/captures after returning from the lab.
+paths:
+  project_root: "D:/YOLO6D_Car"
+  data_root: "D:/CaptureData"
+  fzmotion_root: "D:/CaptureData/FZmotion_Data"
+  captures_root: "D:/CaptureData"
+  outputs_root: "D:/CaptureData/outputs"
+  models_root: "D:/YOLO6D_Car/models"
+  results_root: "D:/CaptureData/results"
+  logs_root: "D:/CaptureData/logs"

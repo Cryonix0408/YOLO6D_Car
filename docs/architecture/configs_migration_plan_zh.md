@@ -344,3 +344,68 @@ python .\scripts\smoke_replay_pipeline.py --config .\configs\replay\local_smoke_
 ```
 
 本轮只写建议，不运行真实采集，不连接相机，不训练模型。
+
+## Phase B2 已执行：低风险复制兼容迁移
+
+本阶段只执行“复制兼容迁移”，不移动、不删除、不重命名旧配置文件。旧路径继续保留，旧命令仍应继续可用；新路径用于后续文档和新命令逐步切换。
+
+### 本轮新增目录
+
+- `configs/paths/`
+- `configs/tracking/`
+- `configs/replay/`
+- `configs/sessions/`
+- `configs/datasets/`
+- `configs/models/`
+- `configs/legacy/`
+
+### 本轮复制的低风险配置
+
+| 旧路径 | 新路径 | 说明 |
+| --- | --- | --- |
+| `configs/paths_local.yaml` | `configs/paths/paths_local.yaml` | 主机路径配置兼容副本 |
+| `configs/paths_laptop.yaml` | `configs/paths/paths_laptop.yaml` | 采集笔记本路径配置兼容副本 |
+| `configs/kalman_fixed.yaml` | `configs/tracking/kalman_fixed.yaml` | fixed Kalman 参数兼容副本 |
+| `configs/kalman_reliability.yaml` | `configs/tracking/kalman_reliability.yaml` | reliability-aware Kalman 参数兼容副本 |
+| `configs/local_smoke_replay.yaml` | `configs/replay/local_smoke_replay.yaml` | smoke replay 配置兼容副本 |
+| `configs/session_manifest_template.yaml` | `configs/sessions/session_manifest_template.yaml` | session manifest 模板兼容副本 |
+| `configs/dataset_manifest_template.yaml` | `configs/datasets/dataset_manifest_template.yaml` | dataset manifest 模板兼容副本 |
+| `configs/model_registry_template.yaml` | `configs/models/model_registry_template.yaml` | model registry 模板兼容副本 |
+
+### 当前状态
+
+- 新旧路径短期并存。
+- 旧配置文件仍然保留在 `configs/` 根目录。
+- 本轮没有处理任何相机、标定、外参、真实采集或历史路径强绑定配置。
+- 后续文档可以逐步推荐使用新路径，但短期不要删除旧路径。
+
+### Phase B2.6 补充：replay 配置相对路径修复
+
+`configs/local_smoke_replay.yaml` 不能只做机械复制。该配置内部包含 `models/...` 和 `data/examples/...` 等相对路径；复制到 `configs/replay/` 后，现有配置加载逻辑会以新配置位置推导解析根，导致这些路径被解析到 `configs/models/...` 或 `configs/data/...`。
+
+B2.6 已只修改新配置 `configs/replay/local_smoke_replay.yaml`，将内部相对路径调整为：
+
+- `object_model.model_json_path: ../models/car_custom_keypoints_12_migrated_200xx_exact.json`
+- `yolo6d.replay_json_path: ../data/examples/custom_model_12pt_predictions.json`
+
+旧配置 `configs/local_smoke_replay.yaml` 未修改。修复后新旧 replay smoke 均已通过。
+
+后续迁移其他配置时，不能只检查文件是否复制成功，还必须检查 YAML 内部所有相对路径是否依赖配置文件位置，例如模型、数据集、示例 replay、输出目录、标定文件和外参文件路径。
+
+### 本轮暂未处理的高风险配置
+
+- `configs/fzmotion_*.yaml`
+- `configs/*_gdrive.yaml`
+- `configs/object_capture*.yaml`
+- `configs/board_capture*.yaml`
+- `configs/calibration_hik_*.yaml`
+- `configs/calibration/*.yaml`
+- `configs/cameras/*.yaml`
+- `configs/capture/*.yaml`
+- `configs/color_correction/*.yaml`
+
+这些配置涉及外参、相机、真实采集、历史路径或仍在实验中的功能，需要人工确认后再进入下一阶段。
+
+### 下一阶段建议：Phase B3
+
+Phase B3 建议只做“旧配置标注 legacy”，仍然不删除旧配置。可以在低风险旧根配置顶部增加注释，提示推荐新路径；对于高风险配置，只先在文档中标注，不直接改文件内容。
