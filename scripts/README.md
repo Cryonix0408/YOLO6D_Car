@@ -5,6 +5,20 @@
 当前阶段为了兼容 README、docs、实验命令、主机和笔记本流程，不直接移动核心脚本。详细盘点和迁移建议见：
 
 - [../docs/architecture/scripts_inventory_zh.md](../docs/architecture/scripts_inventory_zh.md)
+- [../docs/project_conventions_zh.md](../docs/project_conventions_zh.md)
+
+## Phase C2 子目录规则
+
+Phase C2 只落地未来新增脚本的目录规则，不移动任何现有脚本。
+
+- 旧核心脚本仍保留在 `scripts/` 根目录，短期不要移动。
+- 新增临时 / prototype / debug 脚本应优先放 `scripts/dev/`。
+- 新增同步 / 传输 / 主机共享检查脚本应优先放 `scripts/sync/`。
+- 新增 session / dataset / model 管理脚本应优先放 `scripts/management/`。
+- `scripts/legacy/` 只用于人工确认后的历史脚本，不自动归档、不自动删除。
+- 不要随意在 `scripts/` 根目录新增 one-off 脚本。
+
+如果未来确实要迁移旧脚本，应先检查 README、docs、主机和笔记本流程中的旧路径引用，并优先保留根目录 wrapper。
 
 ## 常用核心入口
 
@@ -54,6 +68,7 @@
 
 - 临时实验脚本：未来优先放 `scripts/dev/`。
 - 数据同步脚本：未来优先放 `scripts/sync/`。
+- 管理类脚本：未来优先放 `scripts/management/`。
 - 正式主流程脚本：新增前先确认是否放根目录、分类目录或 `src/yolo6d_car/cli/`。
 - 不要在根目录随意新增 one-off 脚本。
 - 不要在整理阶段移动已有核心脚本；如果确需迁移，应先保留根目录 wrapper。

@@ -151,7 +151,24 @@ scripts/
 
 ### Phase C2：新增脚本按新目录放
 
-未来新增实验性脚本放 `scripts/dev/`。新增同步脚本放 `scripts/sync/`。新增正式流程脚本需要先确认是否放根目录或子目录。
+本阶段新增脚本子目录规则，但不移动任何现有脚本。
+
+已新增目录：
+
+- `scripts/dev/`：临时实验、debug、prototype、一次性测试脚本。
+- `scripts/sync/`：主机 / 笔记本同步、共享盘检查、批量传输脚本。
+- `scripts/management/`：session / dataset / model registry 管理脚本。
+- `scripts/legacy/`：人工确认后的历史遗留脚本。
+
+后续新增脚本放置规则：
+
+- 新增实验性脚本放 `scripts/dev/`。
+- 新增同步脚本放 `scripts/sync/`。
+- 新增管理脚本放 `scripts/management/`。
+- 新增正式流程脚本需要先确认是否放根目录、分类目录或 `src/yolo6d_car/cli/`。
+- `scripts/legacy/` 只能用于人工确认后的历史脚本，不自动删除。
+
+下一阶段建议是 Phase C3：只迁移明确 dev/prototype 的低风险脚本。迁移前必须检查 README、docs、实验命令和主机/笔记本流程是否引用旧路径。核心脚本仍建议保留 root wrapper。
 
 ### Phase C3：低风险 dev 脚本迁移
 
