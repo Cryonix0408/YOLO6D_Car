@@ -13,6 +13,7 @@
 - [architecture/project_structure_migration_plan_zh.md](architecture/project_structure_migration_plan_zh.md)：后续结构迁移计划。
 - [architecture/configs_migration_plan_zh.md](architecture/configs_migration_plan_zh.md)：`configs/` 配置目录收口设计与兼容迁移方案。当前 configs 正处于新路径推荐化与旧根配置 legacy 标注阶段，新旧路径会短期并存。
 - [architecture/configs_b2_compatibility_validation_zh.md](architecture/configs_b2_compatibility_validation_zh.md)：Phase B2 新旧配置路径兼容验证报告。
+- [architecture/scripts_inventory_zh.md](architecture/scripts_inventory_zh.md)：`scripts/` 脚本盘点与后续迁移方案。
 - [architecture/project_code_reading_guide.md](architecture/project_code_reading_guide.md)：读代码顺序和核心模块入口。
 - [architecture/code_reading_notes.md](architecture/code_reading_notes.md)：代码阅读过程记录。
 
