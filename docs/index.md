@@ -11,7 +11,7 @@
 - [architecture/project_redundancy_report_zh.md](architecture/project_redundancy_report_zh.md)：冗余文件和历史遗留内容分析。
 - [architecture/project_structure_proposal_zh.md](architecture/project_structure_proposal_zh.md)：推荐目录结构设计。
 - [architecture/project_structure_migration_plan_zh.md](architecture/project_structure_migration_plan_zh.md)：后续结构迁移计划。
-- [architecture/configs_migration_plan_zh.md](architecture/configs_migration_plan_zh.md)：`configs/` 配置目录收口设计与兼容迁移方案。当前 configs 正处于复制兼容迁移阶段，新旧路径会短期并存。
+- [architecture/configs_migration_plan_zh.md](architecture/configs_migration_plan_zh.md)：`configs/` 配置目录收口设计与兼容迁移方案。当前 configs 正处于新路径推荐化与旧根配置 legacy 标注阶段，新旧路径会短期并存。
 - [architecture/configs_b2_compatibility_validation_zh.md](architecture/configs_b2_compatibility_validation_zh.md)：Phase B2 新旧配置路径兼容验证报告。
 - [architecture/project_code_reading_guide.md](architecture/project_code_reading_guide.md)：读代码顺序和核心模块入口。
 - [architecture/code_reading_notes.md](architecture/code_reading_notes.md)：代码阅读过程记录。

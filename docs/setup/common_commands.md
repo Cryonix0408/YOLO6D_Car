@@ -209,7 +209,7 @@ D:\Envs\yolo6d\python.exe --version
 检查项目依赖和路径：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_project_readiness.py --paths-config configs\paths_local.yaml
+D:\Envs\yolo6d\python.exe scripts\check_project_readiness.py --paths-config configs\paths\paths_local.yaml
 ```
 
 检查数据根目录：
@@ -223,55 +223,55 @@ dir G:\YOLO6D_Car_Data\FZmotion_Data
 ## 9. 主机检查 Mocap CSV
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\<session>.csv --paths-config configs\paths_local.yaml --camera-rigid <camera_rigid> --object-rigid <object_rigid> --output-dir results\mocap_quality\<session> --plot
+D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\<session>.csv --paths-config configs\paths\paths_local.yaml --camera-rigid <camera_rigid> --object-rigid <object_rigid> --output-dir results\mocap_quality\<session> --plot
 ```
 
 示例：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\2026-06-04_car_fast_lateral_001.csv --paths-config configs\paths_local.yaml --camera-rigid hik_rigid --object-rigid car_rigid --output-dir results\mocap_quality\2026-06-04_car_fast_lateral_001 --plot
+D:\Envs\yolo6d\python.exe scripts\check_mocap_csv.py --csv-path FZmotion_Data\raw_csv\2026-06-04_car_fast_lateral_001.csv --paths-config configs\paths\paths_local.yaml --camera-rigid hik_rigid --object-rigid car_rigid --output-dir results\mocap_quality\2026-06-04_car_fast_lateral_001 --plot
 ```
 
 ## 10. 主机自动打标签
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\generate_mocap_labels.py --config configs\fzmotion_fixed_camera_current_rigids_gdrive.yaml --paths-config configs\paths_local.yaml --samples-dir captures\<date>\<session> --csv-path FZmotion_Data\raw_csv\<session>.csv --output-dir outputs\auto_labels\<session> --save-overlays
+D:\Envs\yolo6d\python.exe scripts\generate_mocap_labels.py --config configs\fzmotion_fixed_camera_current_rigids_gdrive.yaml --paths-config configs\paths\paths_local.yaml --samples-dir captures\<date>\<session> --csv-path FZmotion_Data\raw_csv\<session>.csv --output-dir outputs\auto_labels\<session> --save-overlays
 ```
 
 示例：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\generate_mocap_labels.py --config configs\fzmotion_fixed_camera_current_rigids_gdrive.yaml --paths-config configs\paths_local.yaml --samples-dir captures\2026-06-04\2026-06-04_car_fast_lateral_001 --csv-path FZmotion_Data\raw_csv\2026-06-04_car_fast_lateral_001.csv --output-dir outputs\auto_labels\2026-06-04_car_fast_lateral_001 --save-overlays
+D:\Envs\yolo6d\python.exe scripts\generate_mocap_labels.py --config configs\fzmotion_fixed_camera_current_rigids_gdrive.yaml --paths-config configs\paths\paths_local.yaml --samples-dir captures\2026-06-04\2026-06-04_car_fast_lateral_001 --csv-path FZmotion_Data\raw_csv\2026-06-04_car_fast_lateral_001.csv --output-dir outputs\auto_labels\2026-06-04_car_fast_lateral_001 --save-overlays
 ```
 
 ## 11. 主机可视化检查标签
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\visualize_auto_labels.py --labels-root outputs\auto_labels\<session> --images-root captures\<date>\<session>\images --paths-config configs\paths_local.yaml --output-dir results\label_visualization\<session> --max-samples 100
+D:\Envs\yolo6d\python.exe scripts\visualize_auto_labels.py --labels-root outputs\auto_labels\<session> --images-root captures\<date>\<session>\images --paths-config configs\paths\paths_local.yaml --output-dir results\label_visualization\<session> --max-samples 100
 ```
 
 ## 12. 主机构建数据集
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\prepare_yolo_pose_dataset.py --paths-config configs\paths_local.yaml --auto-label-dir outputs\auto_labels\<session_or_batch> --out-dir outputs\datasets\<dataset_name> --val-ratio 0.1 --seed 42 --class-name car_model --overwrite
+D:\Envs\yolo6d\python.exe scripts\prepare_yolo_pose_dataset.py --paths-config configs\paths\paths_local.yaml --auto-label-dir outputs\auto_labels\<session_or_batch> --out-dir outputs\datasets\<dataset_name> --val-ratio 0.1 --seed 42 --class-name car_model --overwrite
 ```
 
 ## 13. 主机训练
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\train_ultralytics_pose.py --paths-config configs\paths_local.yaml --dataset outputs\datasets\<dataset_name>\dataset.yaml --model yolo11n-pose.pt --epochs 150 --imgsz 640 --batch 16 --device 0 --workers 4 --project outputs\train_runs --name <run_name>
+D:\Envs\yolo6d\python.exe scripts\train_ultralytics_pose.py --paths-config configs\paths\paths_local.yaml --dataset outputs\datasets\<dataset_name>\dataset.yaml --model yolo11n-pose.pt --epochs 150 --imgsz 640 --batch 16 --device 0 --workers 4 --project outputs\train_runs --name <run_name>
 ```
 
 ## 14. 主机实时推理
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\run_live_pose.py --config configs\fzmotion_fast_moving_live_gdrive.yaml --paths-config configs\paths_local.yaml --model models\<model_name>_best.pt
+D:\Envs\yolo6d\python.exe scripts\run_live_pose.py --config configs\fzmotion_fast_moving_live_gdrive.yaml --paths-config configs\paths\paths_local.yaml --model models\<model_name>_best.pt
 ```
 
 保存 CSV：
 
 ```powershell
-D:\Envs\yolo6d\python.exe scripts\run_live_pose.py --config configs\fzmotion_fast_moving_live_gdrive.yaml --paths-config configs\paths_local.yaml --model models\<model_name>_best.pt --headless --save-csv results\live_pose_<date>.csv
+D:\Envs\yolo6d\python.exe scripts\run_live_pose.py --config configs\fzmotion_fast_moving_live_gdrive.yaml --paths-config configs\paths\paths_local.yaml --model models\<model_name>_best.pt --headless --save-csv results\live_pose_<date>.csv
 ```
 
 ## 15. 常见排查命令
@@ -344,4 +344,3 @@ python .\scripts\check_capture_quality.py --capture-root D:\CaptureData\<session
 python .\scripts\sync_capture_batch_to_host.py --local-root D:\CaptureData --host-root Z:\captures --plan-only
 python .\scripts\sync_capture_batch_to_host.py --local-root D:\CaptureData --host-root Z:\captures --verify
 ```
-

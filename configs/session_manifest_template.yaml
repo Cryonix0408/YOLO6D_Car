@@ -1,3 +1,7 @@
+# Legacy compatibility config.
+# 推荐新路径：configs/sessions/session_manifest_template.yaml
+# 本文件暂时保留，用于兼容旧命令和旧文档；新任务请优先使用推荐新路径。
+# 不要直接删除本文件，删除前需要完成 1-2 个实验周期的新路径验证。
 dataset:
   name: "car_fast6d_v1"
   description: "Fast-moving small car 6DoF dataset"

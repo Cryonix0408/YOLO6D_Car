@@ -32,41 +32,41 @@
 ## 当前推荐入口
 
 - 文档总入口：[docs/index.md](./docs/index.md)
-- 常用命令：[docs/common_commands.md](./docs/common_commands.md)
-- 笔记本采集流程：[docs/laptop_lab_capture_workflow.md](./docs/laptop_lab_capture_workflow.md)
-- 相机架构：[docs/camera_architecture_zh.md](./docs/camera_architecture_zh.md)
-- 标定流程：[docs/calibration_guide.md](./docs/calibration_guide.md)
-- 训练流程：[docs/training_guide.md](./docs/training_guide.md)
-- 评估流程：[docs/mocap_gt_evaluation.md](./docs/mocap_gt_evaluation.md)
+- 常用命令：[docs/setup/common_commands.md](./docs/setup/common_commands.md)
+- 笔记本采集流程：[docs/capture/laptop_lab_capture_workflow.md](./docs/capture/laptop_lab_capture_workflow.md)
+- 相机架构：[docs/architecture/camera_architecture_zh.md](./docs/architecture/camera_architecture_zh.md)
+- 标定流程：[docs/calibration/calibration_guide.md](./docs/calibration/calibration_guide.md)
+- 训练流程：[docs/training/training_guide.md](./docs/training/training_guide.md)
+- 评估流程：[docs/evaluation/mocap_gt_evaluation.md](./docs/evaluation/mocap_gt_evaluation.md)
 
 ## 文档导航
 
 - 相机统一架构与本机实际路径：
-  [docs/camera_architecture_zh.md](./docs/camera_architecture_zh.md)
+  [docs/architecture/camera_architecture_zh.md](./docs/architecture/camera_architecture_zh.md)
 - 相机配置迁移说明：
-  [docs/camera_config_migration_zh.md](./docs/camera_config_migration_zh.md)
+  [docs/cameras/camera_config_migration_zh.md](./docs/cameras/camera_config_migration_zh.md)
 - 总体架构与流程：
-  [docs/project_guide.md](./docs/project_guide.md)
+  [docs/architecture/project_guide.md](./docs/architecture/project_guide.md)
 - 接手清单：
-  [docs/handover_checklist.md](./docs/handover_checklist.md)
+  [docs/archive/handover_checklist.md](./docs/archive/handover_checklist.md)
 - 环境部署与常见问题：
-  [docs/setup_and_faq.md](./docs/setup_and_faq.md)
+  [docs/setup/setup_and_faq.md](./docs/setup/setup_and_faq.md)
 - 标定总说明：
-  [docs/calibration_guide.md](./docs/calibration_guide.md)
+  [docs/calibration/calibration_guide.md](./docs/calibration/calibration_guide.md)
 - 相机刚体外参标定：
-  [docs/camera_rigid_calibration.md](./docs/camera_rigid_calibration.md)
+  [docs/calibration/camera_rigid_calibration.md](./docs/calibration/camera_rigid_calibration.md)
 - 固定相机世界位姿说明：
-  [docs/fixed_camera_calibration.md](./docs/fixed_camera_calibration.md)
+  [docs/calibration/fixed_camera_calibration.md](./docs/calibration/fixed_camera_calibration.md)
 - 自定义小车模型说明：
-  [docs/custom_car_model.md](./docs/custom_car_model.md)
+  [docs/labeling/custom_car_model.md](./docs/labeling/custom_car_model.md)
 - Mocap 自动打标签：
-  [docs/mocap_label_generation.md](./docs/mocap_label_generation.md)
+  [docs/labeling/mocap_label_generation.md](./docs/labeling/mocap_label_generation.md)
 - 训练说明：
-  [docs/training_guide.md](./docs/training_guide.md)
+  [docs/training/training_guide.md](./docs/training/training_guide.md)
 - 实时推理说明：
-  [docs/live_inference.md](./docs/live_inference.md)
+  [docs/tracking/live_inference.md](./docs/tracking/live_inference.md)
 - 高速运动跟踪与位姿估计：
-  [docs/fast_moving_tracking.md](./docs/fast_moving_tracking.md)
+  [docs/tracking/fast_moving_tracking.md](./docs/tracking/fast_moving_tracking.md)
 
 ## 相机架构说明
 
@@ -79,12 +79,12 @@
 
 Hikrobot 6mm/8mm 配置中的内参路径推荐写成
 `outputs/calibration/<lens>/camera_intrinsics_<lens>.yaml`。运行采集或
-`--validate-config` 时，该路径会根据传入的 `configs/paths_local.yaml` 或
-`configs/paths_laptop.yaml` 分别解析到主机 G 盘或采集笔记本 `D:\CaptureData`；
+`--validate-config` 时，该路径会根据传入的 `configs/paths/paths_local.yaml` 或
+`configs/paths/paths_laptop.yaml` 分别解析到主机 G 盘或采集笔记本 `D:\CaptureData`；
 历史绝对路径仍保持兼容。
 
 采集笔记本当前实际项目路径为 `D:\YOLO6D_Car`，大数据根目录为
-`D:\CaptureData`，应使用 `configs\paths_laptop.yaml`。下方工作站路径仅用于
+`D:\CaptureData`，应优先使用 `configs\paths\paths_laptop.yaml`。下方工作站路径仅用于
 主机部署示例，不应直接复制到采集笔记本命令中。
 
 ## New workstation setup: code on D drive, data on G drive
@@ -98,7 +98,7 @@ Hikrobot 6mm/8mm 配置中的内参路径推荐写成
 - 大数据根目录：
   `G:\YOLO6D_Car_Data`
 - 本机路径配置：
-  [configs/paths_local.yaml](./configs/paths_local.yaml)
+  [configs/paths/paths_local.yaml](./configs/paths/paths_local.yaml)
 
 推荐的大数据目录结构：
 
@@ -118,13 +118,13 @@ G:\YOLO6D_Car_Data\logs
 最小 smoke test：
 
 ```powershell
-D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\local_smoke_replay.yaml --max-frames 3
+D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\replay\local_smoke_replay.yaml --max-frames 3
 ```
 
 G 盘路径配置 smoke test：
 
 ```powershell
-D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\local_smoke_replay_gdrive.yaml --paths-config .\configs\paths_local.yaml --max-frames 3
+D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\local_smoke_replay_gdrive.yaml --paths-config .\configs\paths\paths_local.yaml --max-frames 3
 ```
 
 采集到 G 盘：
@@ -132,7 +132,7 @@ D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\capture_object_samples.py `
   --config .\configs\object_capture.yaml `
-  --paths-config .\configs\paths_local.yaml
+  --paths-config .\configs\paths\paths_local.yaml
 ```
 
 使用 G 盘数据自动打标签：
@@ -140,7 +140,7 @@ D:\Envs\yolo6d\python.exe .\scripts\capture_object_samples.py `
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\generate_mocap_labels.py `
   --config .\configs\fzmotion_fixed_camera_current_rigids.yaml `
-  --paths-config .\configs\paths_local.yaml `
+  --paths-config .\configs\paths\paths_local.yaml `
   --samples-dir outputs/object_capture/<session_name> `
   --csv-path FZmotion_Data/<session_name>.csv `
   --output-dir outputs/auto_labels/<session_name> `
@@ -151,7 +151,7 @@ D:\Envs\yolo6d\python.exe .\scripts\generate_mocap_labels.py `
 
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\prepare_yolo_pose_dataset.py `
-  --paths-config .\configs\paths_local.yaml `
+  --paths-config .\configs\paths\paths_local.yaml `
   --auto-label-dir outputs/auto_labels/<session_name> `
   --out-dir outputs/datasets/<dataset_name>
 ```
@@ -160,7 +160,7 @@ D:\Envs\yolo6d\python.exe .\scripts\prepare_yolo_pose_dataset.py `
 
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\train_ultralytics_pose.py `
-  --paths-config .\configs\paths_local.yaml `
+  --paths-config .\configs\paths\paths_local.yaml `
   --dataset outputs/datasets/<dataset_name>/dataset.yaml `
   --model yolov8n-pose.pt `
   --project outputs/train_runs `
@@ -189,7 +189,7 @@ D:\Envs\yolo6d\python.exe .\scripts\sync_capture_to_host.py `
 - 同步目标：`Z:\captures\<date>\<session>`，对应主机 `G:\YOLO6D_Car_Data\captures\<date>\<session>`
 
 详细设置步骤见：
-[docs/host_data_share_setup.md](./docs/host_data_share_setup.md)
+[docs/setup/host_data_share_setup.md](./docs/setup/host_data_share_setup.md)
 
 ## 目录结构
 
@@ -293,11 +293,11 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 
 ## 新同学接手建议
 
-1. 先看 [docs/handover_checklist.md](./docs/handover_checklist.md)。
-2. 再看 [docs/project_guide.md](./docs/project_guide.md) 理清整体数据流。
-3. 如果要补采样本，先看 [docs/mocap_label_generation.md](./docs/mocap_label_generation.md)。
-4. 如果要重新训练，直接看 [docs/training_guide.md](./docs/training_guide.md)。
-5. 如果要现场演示或联调实时效果，直接看 [docs/live_inference.md](./docs/live_inference.md)。
+1. 先看 [docs/archive/handover_checklist.md](./docs/archive/handover_checklist.md)。
+2. 再看 [docs/architecture/project_guide.md](./docs/architecture/project_guide.md) 理清整体数据流。
+3. 如果要补采样本，先看 [docs/labeling/mocap_label_generation.md](./docs/labeling/mocap_label_generation.md)。
+4. 如果要重新训练，直接看 [docs/training/training_guide.md](./docs/training/training_guide.md)。
+5. 如果要现场演示或联调实时效果，直接看 [docs/tracking/live_inference.md](./docs/tracking/live_inference.md)。
 
 ## 说明
 
@@ -308,17 +308,17 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 
 如果你是第一次读这个项目，建议先看：
 
-- [docs/project_code_reading_guide.md](./docs/project_code_reading_guide.md)
-- [docs/glossary.md](./docs/glossary.md)
-- [docs/full_pipeline_checklist.md](./docs/full_pipeline_checklist.md)
-- [docs/lab_execution_plan.md](./docs/lab_execution_plan.md)
+- [docs/architecture/project_code_reading_guide.md](./docs/architecture/project_code_reading_guide.md)
+- [docs/setup/glossary.md](./docs/setup/glossary.md)
+- [docs/capture/full_pipeline_checklist.md](./docs/capture/full_pipeline_checklist.md)
+- [docs/capture/lab_execution_plan.md](./docs/capture/lab_execution_plan.md)
 
 当前新工作站约定：
 
 - 代码仓库：`D:\Research\YOLO6D_Car`
 - Python：`D:\Envs\yolo6d\python.exe`
 - 大数据根目录：`G:\YOLO6D_Car_Data`
-- 路径配置：`configs\paths_local.yaml`
+- 路径配置：`configs\paths\paths_local.yaml`
 
 重要原则：代码、配置、文档、小型示例留在 D 盘 Git 仓库；真实 captures、FzMotion CSV、auto labels、datasets、train runs、best.pt、results、logs 放到 G 盘，不要提交到 Git。
 
@@ -330,6 +330,6 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 
 - 工具：`scripts/test_color_correction.py`
 - 配置：`configs/color_correction/rgb_wall_reference.yaml`
-- 文档：[docs/color_correction_zh.md](./docs/color_correction_zh.md)
+- 文档：[docs/experiments/color_correction_zh.md](./docs/experiments/color_correction_zh.md)
 
 该工具利用图像中的红、绿、蓝参考区域离线测试 Gamma、HSV-V、RGB channel gain 和 3x3 CCM。它当前只用于实验验证，不接入正式采集 pipeline，也不能替代补光灯。

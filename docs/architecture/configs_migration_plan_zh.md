@@ -322,19 +322,19 @@
 配置复制真正执行后，建议至少运行：
 
 ```powershell
-python .\scripts\capture_object_samples.py --config .\configs\capture\d455_object_capture_auto.yaml --paths-config .\configs\paths_laptop.yaml --validate-config
+python .\scripts\capture_object_samples.py --config .\configs\capture\d455_object_capture_auto.yaml --paths-config .\configs\paths\paths_laptop.yaml --validate-config
 ```
 
 ```powershell
-python .\scripts\capture_object_samples.py --config .\configs\capture\hik_6mm_object_capture_auto.yaml --paths-config .\configs\paths_laptop.yaml --validate-config
+python .\scripts\capture_object_samples.py --config .\configs\capture\hik_6mm_object_capture_auto.yaml --paths-config .\configs\paths\paths_laptop.yaml --validate-config
 ```
 
 ```powershell
-python .\scripts\capture_object_samples.py --config .\configs\capture\hik_8mm_object_capture_auto.yaml --paths-config .\configs\paths_laptop.yaml --validate-config
+python .\scripts\capture_object_samples.py --config .\configs\capture\hik_8mm_object_capture_auto.yaml --paths-config .\configs\paths\paths_laptop.yaml --validate-config
 ```
 
 ```powershell
-python .\scripts\smoke_replay_pipeline.py --config .\configs\local_smoke_replay.yaml --max-frames 3
+python .\scripts\smoke_replay_pipeline.py --config .\configs\replay\local_smoke_replay.yaml --max-frames 3
 ```
 
 如果后续脚本支持新配置路径，还应补充：
@@ -409,3 +409,48 @@ B2.6 已只修改新配置 `configs/replay/local_smoke_replay.yaml`，将内部�
 ### 下一阶段建议：Phase B3
 
 Phase B3 建议只做“旧配置标注 legacy”，仍然不删除旧配置。可以在低风险旧根配置顶部增加注释，提示推荐新路径；对于高风险配置，只先在文档中标注，不直接改文件内容。
+
+## Phase B3 已执行：新路径推荐化与低风险旧配置 legacy 标注
+
+本阶段继续采用安全兼容策略：不移动、不删除、不重命名任何配置文件，只在低风险旧根配置顶部增加 legacy 注释，并在 README / docs 中逐步推荐使用新的 `configs/` 子目录路径。
+
+### 已标注 legacy 的低风险旧根配置
+
+以下旧配置仍保留在 `configs/` 根目录，用于兼容旧命令和旧文档；新任务优先使用右侧推荐路径。
+
+| 旧配置 | 推荐新路径 | 说明 |
+| --- | --- | --- |
+| `configs/paths_local.yaml` | `configs/paths/paths_local.yaml` | 主机路径配置 |
+| `configs/paths_laptop.yaml` | `configs/paths/paths_laptop.yaml` | 采集笔记本路径配置 |
+| `configs/kalman_fixed.yaml` | `configs/tracking/kalman_fixed.yaml` | fixed Kalman 参数 |
+| `configs/kalman_reliability.yaml` | `configs/tracking/kalman_reliability.yaml` | reliability-aware Kalman 参数 |
+| `configs/local_smoke_replay.yaml` | `configs/replay/local_smoke_replay.yaml` | 本地 smoke replay 配置 |
+| `configs/session_manifest_template.yaml` | `configs/sessions/session_manifest_template.yaml` | session manifest 模板 |
+| `configs/dataset_manifest_template.yaml` | `configs/datasets/dataset_manifest_template.yaml` | dataset manifest 模板 |
+| `configs/model_registry_template.yaml` | `configs/models/model_registry_template.yaml` | model registry 模板 |
+
+### 文档推荐路径调整
+
+- README 中的常用路径示例已优先指向 `configs/paths/paths_local.yaml`、`configs/paths/paths_laptop.yaml` 和 `configs/replay/local_smoke_replay.yaml`。
+- `docs/setup/common_commands.md` 中的常用命令已优先使用 `configs/paths/paths_local.yaml`。
+- `docs/index.md` 中已说明 configs 当前处于新旧路径并存、旧根配置 legacy 标注阶段。
+
+### 本阶段仍未处理的高风险配置
+
+以下配置继续保持现状，不在 Phase B3 中添加 legacy 注释，也不推荐贸然移动或改写：
+
+- `configs/fzmotion_*.yaml`
+- `configs/*_gdrive.yaml`
+- `configs/object_capture*.yaml`
+- `configs/board_capture*.yaml`
+- `configs/calibration_hik_*.yaml`
+- `configs/calibration/*.yaml`
+- `configs/cameras/*.yaml`
+- `configs/capture/*.yaml`
+- `configs/color_correction/*.yaml`
+
+这些配置涉及真实相机、外参、标定、采集流程或仍在实验中的功能，需要在后续阶段逐项确认。
+
+### 下一阶段建议：Phase B4
+
+Phase B4 可以开始做文档和命令的更系统回归：确认 README、常用命令、采集流程和训练流程是否都优先使用新路径；同时继续保留旧配置，至少经过 1-2 个完整实验周期后再讨论是否真正归档或删除旧根配置。
