@@ -1,14 +1,17 @@
 # docs/archive 归档说明
 
-`docs/archive/` 建议用于存放阶段性验收报告、迁移记录、同步记录和历史过程文档。这里不是当前主流程入口，而是给后续复盘、交接和追踪历史决策使用。
+`docs/archive/` 用于存放阶段性验收报告、迁移记录、同步记录和历史过程文档。这里不是当前主流程入口，而是给后续复盘、交接和追踪历史决策使用。
 
-本轮安全精简只创建归档说明，不移动任何文件、不删除任何文件、不重命名任何文件。
+Phase A2 已完成 docs 分层整理：本轮只是把已经存在的归档类文档移动到本目录，并更新索引说明；没有删除任何历史文档。
 
-## 建议未来归档的候选文档
+## 当前归档文档
 
-- [docs/camera_phase1_acceptance_report_zh.md](../camera_phase1_acceptance_report_zh.md)：第一阶段相机架构整理验收报告。
-- [docs/camera_phase1_sync_notes_zh.md](../camera_phase1_sync_notes_zh.md)：第一阶段相机架构同步说明。
-- [docs/path_migration_audit.md](../path_migration_audit.md)：路径迁移审计记录。
-- [docs/build_first_then_execute_plan.md](../build_first_then_execute_plan.md)：先构建再执行的迁移计划记录。
+- [camera_phase1_acceptance_report_zh.md](camera_phase1_acceptance_report_zh.md)：第一阶段相机架构整理验收报告。
+- [camera_phase1_sync_notes_zh.md](camera_phase1_sync_notes_zh.md)：第一阶段相机架构同步说明。
+- [path_migration_audit.md](path_migration_audit.md)：路径迁移审计记录。
+- [build_first_then_execute_plan.md](build_first_then_execute_plan.md)：先构建再执行的迁移计划记录。
+- [handover_checklist.md](handover_checklist.md)：项目交接检查清单。
 
-后续如果确认这些文档不再作为日常入口使用，可以在单独 PR / commit 中移动到本目录，并同步更新 `docs/index.md` 和 README 链接。
+## 使用建议
+
+日常操作优先从 [docs/index.md](../index.md) 进入。只有在需要查看历史验收、迁移依据、旧流程来源或交接记录时，再进入本目录。

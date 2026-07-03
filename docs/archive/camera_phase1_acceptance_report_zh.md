@@ -54,8 +54,8 @@
 
 | 文件 | 是否存在 | 当前作用 |
 |---|---|---|
-| `docs/camera_architecture_zh.md` | 是 | 说明统一相机架构、后端能力和限制 |
-| `docs/camera_config_migration_zh.md` | 是 | 说明旧配置到新配置的迁移方式 |
+| `docs/architecture/camera_architecture_zh.md` | 是 | 说明统一相机架构、后端能力和限制 |
+| `docs/cameras/camera_config_migration_zh.md` | 是 | 说明旧配置到新配置的迁移方式 |
 | `README.md` 相机架构说明 | 是 | README 已包含相机架构入口及文档链接 |
 
 ## 3. 本轮修改文件
@@ -71,8 +71,8 @@
 - `configs/cameras/`
 - `configs/capture/`
 - `configs/calibration/`
-- `docs/camera_architecture_zh.md`
-- `docs/camera_config_migration_zh.md`
+- `docs/architecture/camera_architecture_zh.md`
+- `docs/cameras/camera_config_migration_zh.md`
 - `src/yolo6d_car/camera/base_camera.py`
 - `src/yolo6d_car/camera/factory.py`
 - `src/yolo6d_car/camera/hikvision_stream.py`

@@ -5,7 +5,7 @@
 ## 推荐阅读顺序
 
 1. `README.md`
-2. `docs/full_pipeline_checklist.md`
+2. `docs/capture/full_pipeline_checklist.md`
 3. `configs/paths_local.yaml`
 4. `src/yolo6d_car/path_utils.py`
 5. `scripts/check_project_readiness.py`

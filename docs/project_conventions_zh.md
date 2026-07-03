@@ -223,7 +223,7 @@ git status --short
 - `src/yolo6d_car/image_processing/color_correction.py`
 - `scripts/test_color_correction.py`
 - `configs/color_correction/rgb_wall_reference.yaml`
-- `docs/color_correction_zh.md`
+- `docs/experiments/color_correction_zh.md`
 
 并明确说明当前是否接入正式 pipeline。
 

@@ -44,10 +44,10 @@ feat(camera): complete phase-1 unified camera architecture
 ### 文档
 
 - `README.md`
-- `docs/camera_architecture_zh.md`
-- `docs/camera_config_migration_zh.md`
-- `docs/camera_phase1_acceptance_report_zh.md`
-- `docs/camera_phase1_sync_notes_zh.md`
+- `docs/architecture/camera_architecture_zh.md`
+- `docs/cameras/camera_config_migration_zh.md`
+- `docs/archive/camera_phase1_acceptance_report_zh.md`
+- `docs/archive/camera_phase1_sync_notes_zh.md`
 
 ## 3. 本同步不包含什么
 
@@ -88,10 +88,10 @@ git add README.md
 git add scripts/capture_object_samples.py
 git add src/yolo6d_car/camera
 git add configs/cameras configs/capture configs/calibration
-git add docs/camera_architecture_zh.md
-git add docs/camera_config_migration_zh.md
-git add docs/camera_phase1_acceptance_report_zh.md
-git add docs/camera_phase1_sync_notes_zh.md
+git add docs/architecture/camera_architecture_zh.md
+git add docs/cameras/camera_config_migration_zh.md
+git add docs/archive/camera_phase1_acceptance_report_zh.md
+git add docs/archive/camera_phase1_sync_notes_zh.md
 
 git status
 git diff --cached --stat
