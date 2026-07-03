@@ -1,0 +1,43 @@
+color_reference:
+  name: "lab_rgb_wall_reference"
+  description: "实验室红绿蓝背景墙颜色参考，用于 Hikrobot 图像离线色彩校正实验。"
+  color_space: "RGB"
+  note: "以下 ROI 和 target_rgb 均为占位值，必须根据实际测试图片和测量结果修改。"
+
+image:
+  input_color_order: "BGR"
+  output_color_order: "BGR"
+
+rois:
+  red:
+    xywh: [100, 100, 80, 80]
+    target_rgb: [200, 30, 30]
+  green:
+    xywh: [220, 100, 80, 80]
+    target_rgb: [30, 180, 60]
+  blue:
+    xywh: [340, 100, 80, 80]
+    target_rgb: [40, 80, 200]
+
+methods:
+  gamma:
+    enabled: true
+    gamma: 0.8
+  hsv_v:
+    enabled: true
+    scale: 1.50
+    offset: 15
+  rgb_gain:
+    enabled: true
+    max_gain: 3.0
+    min_gain: 0.3
+  ccm:
+    enabled: true
+    regularization: 0.0
+    clip_output: true
+
+quality_checks:
+  min_roi_area: 100
+  warn_if_roi_too_dark: true
+  dark_threshold: 30
+  saturation_threshold: 245
