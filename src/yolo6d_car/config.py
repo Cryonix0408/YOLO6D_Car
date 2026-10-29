@@ -7,6 +7,8 @@ from __future__ import annotations
 # 转成 dataclass。它不会采集、训练或推理，但后续 pipeline 的路径、内参、刚体名
 # 都来自这里。若某个脚本路径解析到了错误磁盘，优先检查本模块和 path_utils.py。
 
+import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,7 +16,7 @@ import numpy as np
 import yaml
 
 from .path_utils import LocalPaths, load_local_paths, resolve_path
-from .transforms import pose_from_quaternion_translation
+from .transforms import pose_from_matrix, pose_from_quaternion_translation
 from .types import PoseSE3
 
 
@@ -31,6 +33,20 @@ class CameraConfig:
 
 
 @dataclass(slots=True)
+class CameraRigidBridgeConfig:
+    """Current camera-rigid frame to the canonical external-calibration frame."""
+
+    enabled: bool
+    source_frame: str
+    target_frame: str
+    artifact_path: Path
+    artifact_sha256: str
+    transform_direction: str
+    validation_status: str
+    current_rigid_to_canonical: PoseSE3
+
+
+@dataclass(slots=True)
 class MocapConfig:
     """动捕输入和坐标系对齐相关配置。"""
 
@@ -43,6 +59,7 @@ class MocapConfig:
     time_offset_s: float
     camera_optical_frame: str
     object_model_frame: str
+    camera_rigid_bridge: CameraRigidBridgeConfig | None
     camera_rigid_to_optical: PoseSE3 | None
     world_camera_optical: PoseSE3 | None
     object_rigid_to_model: PoseSE3
@@ -156,6 +173,97 @@ def _load_optional_pose(raw_pose: dict | None, parent_frame: str, child_frame: s
     return _load_pose(raw_pose, parent_frame=parent_frame, child_frame=child_frame)
 
 
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest().upper()
+
+
+def _load_camera_rigid_bridge(
+    raw_bridge: dict | None,
+    *,
+    root_dir: Path,
+    local_paths: LocalPaths | None,
+    camera_rigid_body: str | None,
+) -> CameraRigidBridgeConfig | None:
+    """Load a validated bridge artifact and reject any provenance mismatch."""
+    if not raw_bridge or not bool(raw_bridge.get("enabled", False)):
+        return None
+    if camera_rigid_body is None:
+        raise ValueError("camera_rigid_bridge requires mocap.camera_rigid_body")
+
+    source_frame = str(raw_bridge["source_frame"])
+    target_frame = str(raw_bridge["target_frame"])
+    artifact_path = _resolve_path(root_dir, raw_bridge.get("artifact_path"), local_paths)
+    if artifact_path is None or not artifact_path.is_file():
+        raise FileNotFoundError(f"Camera Rigid bridge artifact does not exist: {artifact_path}")
+
+    expected_sha256 = str(raw_bridge.get("artifact_sha256", "")).upper()
+    if not expected_sha256:
+        raise ValueError("camera_rigid_bridge.artifact_sha256 is required")
+    actual_sha256 = _sha256(artifact_path)
+    if actual_sha256 != expected_sha256:
+        raise ValueError(
+            "Camera Rigid bridge SHA256 mismatch: "
+            f"expected={expected_sha256}, actual={actual_sha256}, artifact={artifact_path}"
+        )
+
+    payload = json.loads(artifact_path.read_text(encoding="utf-8-sig"))
+    validation_status = str(payload.get("validation_status", ""))
+    if validation_status not in {"validated", "validated_engineering"}:
+        raise ValueError(
+            "Camera Rigid bridge is not validated: "
+            f"status={validation_status!r}, artifact={artifact_path}"
+        )
+
+    artifact_source = str(payload.get("source_frame", payload.get("current_frame_id", "")))
+    artifact_target = str(payload.get("target_frame", payload.get("canonical_frame_id", "")))
+    if artifact_source != source_frame or artifact_target != target_frame:
+        raise ValueError(
+            "Camera Rigid bridge frame mismatch: "
+            f"config={source_frame}->{target_frame}, artifact={artifact_source}->{artifact_target}"
+        )
+
+    direction = str(raw_bridge.get("transform_direction", ""))
+    artifact_direction = str(payload.get("transform_direction", ""))
+    if not direction or artifact_direction != direction:
+        raise ValueError(
+            "Camera Rigid bridge transform direction mismatch: "
+            f"config={direction!r}, artifact={artifact_direction!r}"
+        )
+
+    matrix_raw = payload.get("matrix") or payload.get("matrix_4x4")
+    if matrix_raw is None:
+        raise ValueError(f"Camera Rigid bridge artifact has no 4x4 matrix: {artifact_path}")
+    matrix = np.asarray(matrix_raw, dtype=np.float64)
+    if matrix.shape != (4, 4) or not np.isfinite(matrix).all():
+        raise ValueError(f"Camera Rigid bridge matrix must be finite 4x4: {artifact_path}")
+    if not np.allclose(matrix[3], [0.0, 0.0, 0.0, 1.0], atol=1e-9):
+        raise ValueError(f"Camera Rigid bridge has an invalid homogeneous last row: {artifact_path}")
+    rotation = matrix[:3, :3]
+    if not np.allclose(rotation.T @ rotation, np.eye(3), atol=1e-6) or not np.isclose(
+        np.linalg.det(rotation), 1.0, atol=1e-6
+    ):
+        raise ValueError(f"Camera Rigid bridge rotation is not rigid SE(3): {artifact_path}")
+
+    return CameraRigidBridgeConfig(
+        enabled=True,
+        source_frame=source_frame,
+        target_frame=target_frame,
+        artifact_path=artifact_path,
+        artifact_sha256=actual_sha256,
+        transform_direction=direction,
+        validation_status=validation_status,
+        current_rigid_to_canonical=pose_from_matrix(
+            parent_frame=camera_rigid_body,
+            child_frame=target_frame,
+            matrix=matrix,
+        ),
+    )
+
+
 def load_config(config_path: str | Path, paths_config: str | Path | None = None) -> ProjectConfig:
     """从 YAML 加载并组装项目配置。"""
     config_file = Path(config_path).resolve()
@@ -176,12 +284,23 @@ def load_config(config_path: str | Path, paths_config: str | Path | None = None)
     camera_optical_frame = str(mocap_raw.get("camera_optical_frame", "camera_optical"))
     object_model_frame = str(mocap_raw.get("object_model_frame", "object_model"))
 
+    camera_rigid_bridge = _load_camera_rigid_bridge(
+        mocap_raw.get("camera_rigid_bridge"),
+        root_dir=root_dir,
+        local_paths=local_paths,
+        camera_rigid_body=camera_rigid_body,
+    )
+
     camera_rigid_to_optical = None
     if camera_rigid_body is not None:
         # 只有声明了相机刚体时，T_camera_rigid_to_optical 才有意义。
         camera_rigid_to_optical = _load_optional_pose(
             mocap_raw.get("T_camera_rigid_to_optical"),
-            parent_frame=camera_rigid_body,
+            parent_frame=(
+                camera_rigid_bridge.target_frame
+                if camera_rigid_bridge is not None
+                else camera_rigid_body
+            ),
             child_frame=camera_optical_frame,
         )
 
@@ -202,6 +321,7 @@ def load_config(config_path: str | Path, paths_config: str | Path | None = None)
         time_offset_s=float(mocap_raw.get("time_offset_s", 0.0)),
         camera_optical_frame=camera_optical_frame,
         object_model_frame=object_model_frame,
+        camera_rigid_bridge=camera_rigid_bridge,
         camera_rigid_to_optical=camera_rigid_to_optical,
         world_camera_optical=world_camera_optical,
         object_rigid_to_model=_load_pose(

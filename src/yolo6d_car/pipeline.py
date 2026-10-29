@@ -522,7 +522,8 @@ class PosePipeline:
         if self.config.mocap.camera_rigid_to_optical is None:
             return None
 
-        # 动捕模式：T_world_camera_optical = T_world_camera_rigid * T_camera_rigid_to_optical。
+        # 动捕模式：T_W_CameraOptical = T_W_CurrentRigid1 @ [T_CurrentRigid1_1007Rigid1] @ T_1007Rigid1_CameraOptical。
+        # 方括号内为 Camera Bridge，只有 Rigid1 frame 定义与外参标定 epoch 不同时才需要。
         camera_rigid_pose = self.mocap_provider.get_pose(
             rigid_body=self.config.mocap.camera_rigid_body,
             timestamp_s=mocap_timestamp_s,
@@ -530,6 +531,12 @@ class PosePipeline:
         )
         if camera_rigid_pose is None:
             return None
+        if self.config.mocap.camera_rigid_bridge is not None:
+            # T_W_CurrentRigid1 @ T_CurrentRigid1_1007Rigid1 → T_W_1007Rigid1
+            camera_rigid_pose = compose_poses(
+                camera_rigid_pose,
+                self.config.mocap.camera_rigid_bridge.current_rigid_to_canonical,
+            )
         return compose_poses(camera_rigid_pose, self.config.mocap.camera_rigid_to_optical)
 
     def _compute_mocap_pose(self, timestamp_s: float) -> PoseSE3 | None:

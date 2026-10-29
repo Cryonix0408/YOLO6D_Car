@@ -1,0 +1,128 @@
+{
+  "frame": "Rigid0",
+  "description": "Custom car keypoints estimated from FzMotion marker world coordinates and transformed into the rigid body local frame.",
+  "points": [
+    {
+      "name": "marker_20000",
+      "xyz_m": [
+        -0.04595523475228354,
+        0.022857976570383715,
+        -0.007122137214117663
+      ],
+      "source_marker_id": "Rigid0Marker20000"
+    },
+    {
+      "name": "marker_20001",
+      "xyz_m": [
+        -0.0807774995926741,
+        -0.030102096780403067,
+        0.14859914780994005
+      ],
+      "source_marker_id": "Rigid0Marker20001"
+    },
+    {
+      "name": "marker_20002",
+      "xyz_m": [
+        -0.07155162041686795,
+        -0.02153810074231016,
+        -0.07664226519668503
+      ],
+      "source_marker_id": "Rigid0Marker20002"
+    },
+    {
+      "name": "marker_20003",
+      "xyz_m": [
+        -0.04255760223556061,
+        0.026848191618615586,
+        -0.08005041818611526
+      ],
+      "source_marker_id": "Rigid0Marker20003"
+    },
+    {
+      "name": "marker_20004",
+      "xyz_m": [
+        0.044431736382186914,
+        0.023868089580232538,
+        0.0018468149508765928
+      ],
+      "source_marker_id": "Rigid0Marker20004"
+    },
+    {
+      "name": "marker_20005",
+      "xyz_m": [
+        0.06526143922251523,
+        -0.0274687541405207,
+        0.15563668116497248
+      ],
+      "source_marker_id": "Rigid0Marker20005"
+    },
+    {
+      "name": "marker_20006",
+      "xyz_m": [
+        0.048618289171991916,
+        0.026982294457114725,
+        -0.07546306054015794
+      ],
+      "source_marker_id": "Rigid0Marker20006"
+    },
+    {
+      "name": "marker_20007",
+      "xyz_m": [
+        0.08253132081482313,
+        -0.021446961061058686,
+        -0.06680778388497761
+      ],
+      "source_marker_id": "Rigid0Marker20007"
+    }
+  ],
+  "edges": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      0
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      7,
+      4
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      5
+    ],
+    [
+      2,
+      6
+    ],
+    [
+      3,
+      7
+    ]
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "artifact_type": "object_rigid_frame_registration",
+  "validation_status": "validated_engineering",
+  "source_frame": "CanonicalCarModel",
+  "target_frame": "CurrentRigid0",
+  "transform_name": "T_CurrentRigid0_CanonicalCarModel",
+  "transform_direction": "p_CurrentRigid0 = T_CurrentRigid0_CanonicalCarModel @ p_CanonicalCarModel",
+  "scale_fixed": true,
+  "rotation_matrix": [
+    [0.9999455446171699, 0.010435110278509765, -0.00012756859594706985],
+    [-0.01043193566680169, 0.9998284448427529, 0.015305410859102208],
+    [0.00028726036106879705, -0.015303246609708712, 0.999882857201126]
+  ],
+  "quaternion_xyzw": [
+    -0.007652492621542277,
+    -0.00010371168797588303,
+    -0.005216985269366765,
+    0.9999571049126369
+  ],
+  "translation_m": [
+    -0.00000775062556672644,
+    0.000004582231283977245,
+    -0.000021002179022169152
+  ],
+  "matrix": [
+    [0.9999455446171699, 0.010435110278509765, -0.00012756859594706985, -0.00000775062556672644],
+    [-0.01043193566680169, 0.9998284448427529, 0.015305410859102208, 0.000004582231283977245],
+    [0.00028726036106879705, -0.015303246609708712, 0.999882857201126, -0.000021002179022169152],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "rotation_from_identity_deg": 1.0613850268875844,
+  "residual_mm": {
+    "rms": 3.514018630371288,
+    "max": 4.8668574525821775,
+    "second_best_rms": 27.759925195546664,
+    "ambiguity_ratio": 7.899766084226359
+  },
+  "matching_method": "marker-ID-independent exhaustive 8! assignment plus scale-fixed rigid Kabsch",
+  "marker_identity_note": "Marker numeric IDs are rebuild/session-local and are not permanent physical identities.",
+  "physical_correspondence": {
+    "top_front_left": "Rigid0Marker20004",
+    "top_front_right": "Rigid0Marker20000",
+    "top_rear_right": "Rigid0Marker20003",
+    "top_rear_left": "Rigid0Marker20006",
+    "chassis_front_left": "Rigid0Marker20005",
+    "chassis_front_right": "Rigid0Marker20001",
+    "chassis_rear_right": "Rigid0Marker20002",
+    "chassis_rear_left": "Rigid0Marker20007"
+  },
+  "source_diagnostic_artifact": "configs/calibration/rigid0_to_canonical_car_model_registration_20261013_diagnostic.json",
+  "source_diagnostic_sha256": "4BED2E4AD4CE79FD7E974E3A8EDB00ADC866B4116F8CF06E2C77D2A31F638FC3",
+  "canonical_model_path": "models/car_custom_keypoints_12_current_rigid0_200xx.json",
+  "canonical_model_geometry_input_sha256": "73CFFD3596368A5BBA69C5106F30C7EEC9FB969FE8708CB3A28622739DB76FD2",
+  "current_rigid0_marker_model_path": "models/car_rigid0_current_20261012_markers.json",
+  "current_rigid0_marker_model_sha256": "1A5A44F19F82C396897EE8D7084B51C1228868C6C8901555E624EC16260F9895",
+  "validation_evidence": {
+    "static0004_multi_yaw": {
+      "status": "passed",
+      "classification": "CANDIDATE IMPROVES MULTI-YAW CONSISTENCY",
+      "stable_yaw_deg": [15, 30, 45, 60, 75, 180],
+      "report": "D:\\CaptureData\\outputs\\rigid0_car_model_overlay_validation_static0004_20261013\\visual_review_result.json",
+      "report_sha256": "314AC6BF9F81C1A02CDB5004BEF988C43B63231FC845399C4B3098F61702F8FF"
+    },
+    "camera_bridge_production_regression": {
+      "status": "passed",
+      "report": "D:\\CaptureData\\outputs\\calibration\\hik_6mm\\rigid1_bridge_layer_a_production_regression_static0004_20261015\\rigid1_bridge_layer_a_replay_report.json",
+      "report_sha256": "E1D78219DA3F0710C792B0E2683BFAEDF8FC4BFC1719044748C3FBBF883B60CD"
+    },
+    "physical_bbox_production_regression": {
+      "status": "passed",
+      "stable_yaw_deg": [15, 30, 45, 60, 75, 180],
+      "report": "D:\\CaptureData\\outputs\\auto_labels\\car_static_0004_physical_bbox_model_promotion_regression_20261015\\summary.json",
+      "report_sha256": "4BDDDB91E9F78DD0B80E124FF2E472F7E525087401E5AA13A01CA7E39240B3FC"
+    }
+  },
+  "promotion": {
+    "date": "2026-10-15",
+    "status": "validated_engineering",
+    "production_label_generation_allowed": true
+  }
+}

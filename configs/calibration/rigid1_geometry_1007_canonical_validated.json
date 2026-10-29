@@ -1,0 +1,40 @@
+{
+  "artifact_type": "camera_rigid_canonical_geometry",
+  "frame_id": "hik_camera_rigid_after_mocap_recalib_001",
+  "epoch": "2026-10-07",
+  "source_session": "hik_6mm_extrinsic_current_rigid1_20261007_002",
+  "source_csv": "D:\\CaptureData\\FZMotion_Data1\\hik_6mm_extrinsic_current_rigid1_20261007_002.csv",
+  "source_csv_sha256": "09286FB0FAEA543E36A034B7F2BDE3CE9FB038F2C7FCD77C3D246B1B5B06D01D",
+  "source_diagnostic_artifact": "D:\\CaptureData\\outputs\\calibration\\hik_6mm\\rigid1_bridge_1007_to_current_20261014_diagnostic\\rigid1_geometry_1007.json",
+  "source_diagnostic_sha256": "2D80C9429D439899152A85CE98659C305BAA83CFAEEA84A3B73ADE94CCFFC078",
+  "transform_convention": "p_Rigid1 = inverse(T_W_Rigid1) @ p_W_marker",
+  "units": "meter",
+  "sample_count": 16914,
+  "raw_complete_sample_count": 17008,
+  "rejected_sample_count": 94,
+  "robust_filtering_method": "Two-stage coordinate-wise robust median; complete finite four-marker rows only; 8*MAD thresholds with conservative physical floors/caps on local-geometry, translation, and hemisphere-safe geodesic rotation deviations.",
+  "markers": {
+    "20100": {
+      "local_xyz_m": [-0.0024315856271625792, -0.05898638584611013, 0.020057597234048395],
+      "sample_count": 16914,
+      "spread_mm": {"p50": 0.014233907788851344, "p90": 0.028641231498238988, "max": 0.06954897169306103}
+    },
+    "20101": {
+      "local_xyz_m": [-0.027180500863464088, 0.012542566738837017, -0.008998542504851721],
+      "sample_count": 16914,
+      "spread_mm": {"p50": 0.01728125376914281, "p90": 0.029054238630403455, "max": 0.064773475871675}
+    },
+    "20102": {
+      "local_xyz_m": [0.001278171447008581, 0.03983407232655317, -0.00498101230073095],
+      "sample_count": 16914,
+      "spread_mm": {"p50": 0.019146396336589315, "p90": 0.032243221928332934, "max": 0.07972549945564598}
+    },
+    "20103": {
+      "local_xyz_m": [0.028334167127997894, 0.006609991888615752, -0.006078047856412101],
+      "sample_count": 16914,
+      "spread_mm": {"p50": 0.01623218018292452, "p90": 0.027482352379211733, "max": 0.06057256646840414}
+    }
+  },
+  "marker_identity_note": "Marker numeric IDs identify this calibration epoch only and are not permanent physical identities across Rigid1 rebuilds.",
+  "validation_status": "validated_geometry"
+}

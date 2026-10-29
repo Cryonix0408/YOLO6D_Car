@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "artifact_type": "rigid0_to_canonical_car_model_registration",
+  "created_date": "2026-10-13",
+  "validation_status": "diagnostic_candidate",
+  "canonical_model": {
+    "path": "D:\\YOLO6D_Car\\models\\car_custom_keypoints_12_current_rigid0_200xx.json",
+    "sha256": "077396D210B0A344AFF47F5ADBE60091C5789662364194BA65EA4D280FAD5BC6"
+  },
+  "current_rigid0_marker_model": {
+    "path": "D:\\YOLO6D_Car\\models\\car_rigid0_current_20261012_markers.json",
+    "sha256": "1A5A44F19F82C396897EE8D7084B51C1228868C6C8901555E624EC16260F9895"
+  },
+  "registration_method": {
+    "correspondence_search": "marker-ID-independent exhaustive 8! assignment",
+    "rigid_fit": "Kabsch SE(3)",
+    "scale_fixed": true,
+    "marker_identity_policy": "marker ID is session/rebuild-local, not permanent physical identity"
+  },
+  "transform": {
+    "name": "T_CurrentRigid0_CanonicalCarModel",
+    "direction": "p_CurrentRigid0 = T_CurrentRigid0_CanonicalCarModel @ p_CanonicalCarModel",
+    "rotation_matrix": [
+      [0.9999455446171699, 0.010435110278509765, -0.00012756859594706985],
+      [-0.01043193566680169, 0.9998284448427529, 0.015305410859102208],
+      [0.00028726036106879705, -0.015303246609708712, 0.999882857201126]
+    ],
+    "quaternion_xyzw": [
+      -0.007652492621542277,
+      -0.00010371168797588303,
+      -0.005216985269366765,
+      0.9999571049126369
+    ],
+    "translation_m": [
+      -0.00000775062556672644,
+      0.000004582231283977245,
+      -0.000021002179022169152
+    ],
+    "rotation_from_identity_deg": 1.0613850268875844
+  },
+  "physical_correspondence": [
+    {
+      "canonical_point": "top_front_left",
+      "current_rigid0_point": "marker_20004",
+      "current_marker_id": "Rigid0Marker20004",
+      "residual_mm": 4.822010265383009
+    },
+    {
+      "canonical_point": "top_front_right",
+      "current_rigid0_point": "marker_20000",
+      "current_marker_id": "Rigid0Marker20000",
+      "residual_mm": 2.0616340439621834
+    },
+    {
+      "canonical_point": "top_rear_right",
+      "current_rigid0_point": "marker_20003",
+      "current_marker_id": "Rigid0Marker20003",
+      "residual_mm": 1.780561060356445
+    },
+    {
+      "canonical_point": "top_rear_left",
+      "current_rigid0_point": "marker_20006",
+      "current_marker_id": "Rigid0Marker20006",
+      "residual_mm": 3.089035607302735
+    },
+    {
+      "canonical_point": "chassis_front_left",
+      "current_rigid0_point": "marker_20005",
+      "current_marker_id": "Rigid0Marker20005",
+      "residual_mm": 3.339607459518019
+    },
+    {
+      "canonical_point": "chassis_front_right",
+      "current_rigid0_point": "marker_20001",
+      "current_marker_id": "Rigid0Marker20001",
+      "residual_mm": 3.1280319185780505
+    },
+    {
+      "canonical_point": "chassis_rear_right",
+      "current_rigid0_point": "marker_20002",
+      "current_marker_id": "Rigid0Marker20002",
+      "residual_mm": 3.734714947915172
+    },
+    {
+      "canonical_point": "chassis_rear_left",
+      "current_rigid0_point": "marker_20007",
+      "current_marker_id": "Rigid0Marker20007",
+      "residual_mm": 4.8668574525821775
+    }
+  ],
+  "residual": {
+    "rms_mm": 3.514018630371288,
+    "max_mm": 4.8668574525821775,
+    "best_rms_mm": 3.514018630371288,
+    "second_best_rms_mm": 27.759925195546664,
+    "ambiguity_ratio_second_to_best": 7.899766084226359
+  },
+  "metadata_inconsistency": {
+    "field": "origin_description",
+    "reported_value": "midpoint of the four lower markers",
+    "consistent_with_stored_coordinates": false,
+    "four_lower_points": [
+      "chassis_front_left",
+      "chassis_front_right",
+      "chassis_rear_right",
+      "chassis_rear_left"
+    ],
+    "computed_midpoint_m": [
+      -0.0008148127817988599,
+      -0.02430345613441596,
+      0.040898897540305824
+    ],
+    "midpoint_distance_from_origin_mm": 47.581947416633724,
+    "lower_point_y_range_mm": 16.627439426505884,
+    "action": "reported_only; canonical object model was not modified"
+  },
+  "production_usage": {
+    "enabled": false,
+    "next_required_validation": "static0004 multi-yaw overlay validation"
+  }
+}

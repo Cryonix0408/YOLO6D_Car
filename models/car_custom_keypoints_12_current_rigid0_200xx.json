@@ -1,0 +1,303 @@
+{
+  "frame": "Rigid0",
+  "description": "Migrated to current FzMotion Rigid0Marker20000-20007 coordinates by automatic marker geometry assignment from car_static_01_MAIN_H1_R0_L0_B0.csv.",
+  "coordinate_frame": {
+    "frame_id": "car_model",
+    "stored_coordinates_frame": "Rigid0_unvalidated_legacy",
+    "units": "m",
+    "handedness": "right_handed",
+    "origin_description": "Intended origin is the midpoint of the four lower markers on their common plane; current coordinates have not been independently calibrated to this origin.",
+    "axis_x": "+X points to vehicle left",
+    "axis_y": "+Y points upward",
+    "axis_z": "+Z points forward",
+    "status": "validated",
+    "evidence": "Point names and legacy coordinates imply the axis convention, but no independent current-Rigid0-to-Car-Model correspondences validate the origin or transform.",
+    "registration_artifact": "configs/calibration/T_current_rigid0_from_canonical_car_model_validated_20261015.json",
+    "registration_artifact_sha256": "1B791214F43AA4B7A4D55C76C23309FE4A8720158387ED273A4B1592CD33B5A6",
+    "validation_date": "2026-10-15",
+    "validation_status": "validated_engineering"
+  },
+  "center_3d": [
+    0.00025,
+    -0.078694,
+    0.0366595
+  ],
+  "bbox_corners_3d": [
+    {
+      "name": "left_top_front",
+      "xyz_m": [0.127934, -0.005194, 0.166977]
+    },
+    {
+      "name": "right_top_front",
+      "xyz_m": [-0.127434, -0.005194, 0.166977]
+    },
+    {
+      "name": "right_top_rear",
+      "xyz_m": [-0.127434, -0.005194, -0.093658]
+    },
+    {
+      "name": "left_top_rear",
+      "xyz_m": [0.127934, -0.005194, -0.093658]
+    },
+    {
+      "name": "left_bottom_front",
+      "xyz_m": [0.127934, -0.152194, 0.166977]
+    },
+    {
+      "name": "right_bottom_front",
+      "xyz_m": [-0.127434, -0.152194, 0.166977]
+    },
+    {
+      "name": "right_bottom_rear",
+      "xyz_m": [-0.127434, -0.152194, -0.093658]
+    },
+    {
+      "name": "left_bottom_rear",
+      "xyz_m": [0.127934, -0.152194, -0.093658]
+    }
+  ],
+  "keypoints_3d_source": "legacy_migrated_model_pending_frame_calibration",
+  "points": [
+    {
+      "name": "top_front_left",
+      "xyz_m": [
+        0.04065567711535562,
+        0.023819313629112212,
+        -0.0010199745552640846
+      ],
+      "source_marker_id": "20002"
+    },
+    {
+      "name": "top_front_right",
+      "xyz_m": [
+        -0.04478627288482609,
+        0.02113775417558782,
+        -0.007447959313002107
+      ],
+      "source_marker_id": "20005"
+    },
+    {
+      "name": "top_rear_right",
+      "xyz_m": [
+        -0.0429534704068212,
+        0.025860622711290634,
+        -0.07985958687617264
+      ],
+      "source_marker_id": "20004"
+    },
+    {
+      "name": "top_rear_left",
+      "xyz_m": [
+        0.05040657062644183,
+        0.026358252548584395,
+        -0.07510365170021696
+      ],
+      "source_marker_id": "20001"
+    },
+    {
+      "name": "chassis_front_left",
+      "xyz_m": [
+        0.06512507313600811,
+        -0.03146804122756777,
+        0.15758707440774958
+      ],
+      "source_marker_id": "20003"
+    },
+    {
+      "name": "chassis_front_right",
+      "xyz_m": [
+        -0.07900814311405499,
+        -0.03130579135849312,
+        0.14611165543645183
+      ],
+      "source_marker_id": "20007"
+    },
+    {
+      "name": "chassis_rear_right",
+      "xyz_m": [
+        -0.07107803833992167,
+        -0.019599390150541046,
+        -0.07352848820702462
+      ],
+      "source_marker_id": "20006"
+    },
+    {
+      "name": "chassis_rear_left",
+      "xyz_m": [
+        0.08170185719077311,
+        -0.014840601801061889,
+        -0.06657465147595351
+      ],
+      "source_marker_id": "20000"
+    },
+    {
+      "name": "wheel_front_left_outer",
+      "xyz_m": [
+        0.09337540994344488,
+        -0.07237802307048265,
+        0.17088486202710537
+      ],
+      "source_marker_id": null
+    },
+    {
+      "name": "wheel_front_right_outer",
+      "xyz_m": [
+        -0.11594506490638588,
+        -0.07643312709573273,
+        0.15449904682047855
+      ],
+      "source_marker_id": null
+    },
+    {
+      "name": "wheel_rear_right_outer",
+      "xyz_m": [
+        -0.09618360017739894,
+        -0.0695724422586811,
+        -0.09964149602015432
+      ],
+      "source_marker_id": null
+    },
+    {
+      "name": "wheel_rear_left_outer",
+      "xyz_m": [
+        0.11313687467243183,
+        -0.06551733823343102,
+        -0.08325568081352752
+      ],
+      "source_marker_id": null
+    }
+  ],
+  "edges": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      0
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      7,
+      4
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      5
+    ],
+    [
+      2,
+      6
+    ],
+    [
+      3,
+      7
+    ],
+    [
+      8,
+      9
+    ],
+    [
+      9,
+      10
+    ],
+    [
+      10,
+      11
+    ],
+    [
+      11,
+      8
+    ],
+    [
+      4,
+      8
+    ],
+    [
+      5,
+      9
+    ],
+    [
+      6,
+      10
+    ],
+    [
+      7,
+      11
+    ]
+  ],
+  "migration": {
+    "source_model": "D:\\YOLO6D_Car\\models\\car_custom_keypoints_12_migrated_200xx_exact.json",
+    "mocap_csv": "D:\\CaptureData\\FZMotion_Data\\car_static_01_MAIN_H1_R0_L0_B0.csv",
+    "physical_marker_mapping": {
+      "20400": "20003",
+      "20401": "20000",
+      "20402": "20001",
+      "20403": "20004",
+      "20404": "20006",
+      "20405": "20007",
+      "20406": "20005",
+      "20407": "20002"
+    },
+    "samples_used_for_current_marker_median": 8000,
+    "kabsch_marker_fit_rms_mm": 10.292526724625532,
+    "kabsch_marker_fit_max_mm": 14.828543243404225,
+    "per_marker_residual_mm": {
+      "20400": 7.549471807774836,
+      "20401": 6.132825790029696,
+      "20402": 10.255527878316764,
+      "20403": 12.196999337588737,
+      "20404": 7.667052728782007,
+      "20405": 3.307712290032333,
+      "20406": 14.828543243404225,
+      "20407": 14.468233358108021
+    },
+    "transform_old_model_to_current_rigid0": {
+      "rotation_matrix": [
+        [
+          -0.021512294919047298,
+          -0.02540685598790417,
+          -0.9994457027953672
+        ],
+        [
+          -0.029997190718817797,
+          0.9992433671181093,
+          -0.02475604611891363
+        ],
+        [
+          0.999318462611541,
+          0.029448003994716532,
+          -0.0222581523139813
+        ]
+      ],
+      "translation_m": [
+        1.9593090299949417e-05,
+        -0.026464551338187512,
+        0.037228416795127416
+      ]
+    }
+  }
+}

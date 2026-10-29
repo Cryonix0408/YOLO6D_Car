@@ -18,7 +18,8 @@ from pathlib import Path
 import numpy as np
 
 # 从项目内部模块导入：根据四元数和平移构造 PoseSE3
-from ..transforms import pose_from_quaternion_translation
+from ..transforms import matrix_to_quaternion, pose_from_quaternion_translation
+from .interpolation import interpolate_rigid_pose
 
 # 项目中定义的位姿类型
 from ..types import PoseSE3
@@ -34,6 +35,16 @@ class TimestampedPose:
     """
     timestamp_s: float   # 时间戳（秒）
     pose: PoseSE3        # 位姿对象
+
+    @property
+    def translation_m(self) -> np.ndarray:
+        """为公共插值接口暴露平移向量。"""
+        return self.pose.translation_m
+
+    @property
+    def quaternion_xyzw(self) -> np.ndarray:
+        """为公共插值接口暴露 ``xyzw`` 四元数。"""
+        return matrix_to_quaternion(self.pose.rotation)
 
 
 # =========================================================
@@ -434,3 +445,59 @@ class CSVRigidBodyProvider:
                 best_pose = samples[index].pose
 
         return best_pose
+
+    def get_pose_window(
+        self,
+        rigid_body: str,
+        timestamp_s: float,
+        half_window_s: float,
+    ) -> list[TimestampedPose]:
+        """Return recorded poses inside a closed time window without interpolation."""
+        if half_window_s < 0.0:
+            raise ValueError("half_window_s must be non-negative")
+
+        timestamps = self._timestamps_by_body.get(rigid_body)
+        samples = self._poses_by_body.get(rigid_body)
+        if not timestamps or not samples:
+            return []
+
+        start = bisect.bisect_left(timestamps, timestamp_s - half_window_s)
+        end = bisect.bisect_right(timestamps, timestamp_s + half_window_s)
+        return list(samples[start:end])
+
+    def get_interpolated_pose(
+        self,
+        rigid_body: str,
+        timestamp_s: float,
+        max_gap_s: float | None = None,
+    ) -> PoseSE3 | None:
+        """线性插值平移并用 SLERP 插值旋转，默认不允许外推。"""
+        samples = self._poses_by_body.get(rigid_body)
+        result = interpolate_rigid_pose(samples or [], timestamp_s, max_gap_s=max_gap_s)
+        if result is None:
+            return None
+        return pose_from_quaternion_translation(
+            parent_frame="mocap_world",
+            child_frame=rigid_body,
+            translation_m=result.translation_m,
+            quaternion_xyzw=result.quaternion_xyzw,
+            timestamp_s=result.timestamp_s,
+        )
+
+    def query_pose(
+        self,
+        rigid_body: str,
+        timestamp_s: float,
+        *,
+        mode: str = "nearest",
+        max_time_diff_s: float | None = None,
+        max_gap_s: float | None = None,
+    ) -> PoseSE3 | None:
+        """按显式模式查询位姿，旧流程默认仍为 ``nearest``。"""
+        if mode == "nearest":
+            if max_time_diff_s is None:
+                raise ValueError("nearest mode requires max_time_diff_s")
+            return self.get_pose(rigid_body, timestamp_s, max_time_diff_s)
+        if mode == "interpolate":
+            return self.get_interpolated_pose(rigid_body, timestamp_s, max_gap_s=max_gap_s)
+        raise ValueError(f"Unsupported mocap query mode: {mode}")

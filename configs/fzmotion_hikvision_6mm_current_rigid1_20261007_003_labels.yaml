@@ -1,0 +1,102 @@
+# Hik 6mm offline label configuration using solve run 003.
+# Source image session used for the solve: current_rigid1_20261007_002.
+# This file is a label-only copy; the original current_rigids.yaml is unchanged.
+
+camera:
+  source: hikvision_mvs
+  color_width: 1440
+  color_height: 1080
+  fps: 60
+  enable_depth: false
+  align_depth_to_color: false
+
+mocap:
+  enabled: true
+  mode: csv
+  csv_path: null
+  camera_rigid_body: Rigid1
+  object_rigid_body: Rigid0
+  max_time_diff_s: 0.03
+  time_offset_s: 0.0
+  camera_optical_frame: camera_optical
+  object_model_frame: car_model
+
+  # Current FzMotion Rigid1 was rebuilt after the 1007 Camera external solve.
+  # Keep the external frozen and bridge the current frame into its canonical frame.
+  camera_rigid_bridge:
+    enabled: true
+    source_frame: current_rigid1
+    target_frame: hik_camera_rigid_after_mocap_recalib_001
+    artifact_path: configs/calibration/T_current_rigid1_to_1007_rigid1_validated_20261014.json
+    artifact_sha256: 45BF9F42CC677680DDC5A26579808FCF7AED778BF4FA35FA38EB59B8421D3A38
+    transform_direction: "p_CurrentRigid1 = T_CurrentRigid1_1007Rigid1 @ p_1007Rigid1"
+
+  # Solve run 003, validated_engineering.
+  # Source session: hik_6mm_extrinsic_current_rigid1_20261007_002.
+  T_camera_rigid_to_optical:
+    translation_m: [-0.0121853686477157, -0.00997087463856612, -0.0691665989897174]
+    quaternion_xyzw: [0.9989015842280617, 0.00672144076445453, 0.0444683256844477, -0.0131535269620109]
+
+  T_world_camera_optical: null
+  T_object_rigid_to_model:
+    translation_m: [-0.00000775062556672644, 0.000004582231283977245, -0.000021002179022169152]
+    quaternion_xyzw: [-0.007652492621542277, -0.00010371168797588303, -0.005216985269366765, 0.9999571049126369]
+    metadata:
+      direction: p_Rigid0 = T_Rigid0_CarModel @ p_CarModel
+      transform_direction: p_CurrentRigid0 = T_CurrentRigid0_CanonicalCarModel @ p_CanonicalCarModel
+      source_frame: CanonicalCarModel
+      target_frame: CurrentRigid0
+      status: validated
+      validation_status: validated_engineering
+      source: configs/calibration/T_current_rigid0_from_canonical_car_model_validated_20261015.json
+      artifact_sha256: 1B791214F43AA4B7A4D55C76C23309FE4A8720158387ED273A4B1592CD33B5A6
+      calibration_method: marker-ID-independent exhaustive 8! assignment plus scale-fixed rigid Kabsch
+      formal_labels_allowed: true
+
+object_model:
+  label: car_model
+  keypoints_mode: custom
+  model_json_path: models/car_custom_keypoints_12_current_rigid0_200xx.json
+  include_center: false
+
+yolo6d:
+  backend: ultralytics_live
+  conf_threshold: 0.22
+  replay_json_path: null
+  model_path: outputs/train_runs/uav_4m_20sessions_pose_v1/weights/best.pt
+  inference_imgsz: 640
+  inference_device: "0"
+  replay_timestamp_tolerance_s: 0.05
+  roi_tracker:
+    enabled: true
+    expand_ratio: 3.0
+    min_size_px: 160
+    full_frame_interval: 5
+    max_missed_frames: 1
+    square_crop: true
+    predict_motion: true
+    velocity_alpha: 0.70
+    max_prediction_frames: 4
+  temporal_filter:
+    enabled: true
+    translation_alpha: 0.75
+    rotation_alpha: 0.65
+    max_translation_jump_m: 0.80
+    max_angle_jump_deg: 75.0
+    hold_last_frames: 1
+  pnp:
+    ransac_reproj_threshold_px: 6.0
+    iterations_count: 100
+    confidence: 0.99
+    min_keypoint_score: 0.15
+
+output:
+  print_json_lines: true
+  show_window: true
+  save_csv: outputs/hikvision_6mm_pose_log.csv
+
+provenance:
+  camera_extrinsic_source: D:/CaptureData/outputs/calibration/hik_6mm/current_rigid1_20261007_003
+  rigid_definition_ids:
+    Rigid0: unrecorded_in_source_config
+    Rigid1: unrecorded_in_source_config

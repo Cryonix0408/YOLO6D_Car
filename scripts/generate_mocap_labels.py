@@ -1,4 +1,4 @@
-﻿"""结合图像、Mocap 和外参自动生成 YOLO Pose 标签。"""
+"""结合图像、Mocap 和外参自动生成 YOLO Pose 标签。"""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -35,7 +36,15 @@ from yolo6d_car.mocap.csv_provider import CSVRigidBodyProvider
 from yolo6d_car.object_model import build_object_edges, build_object_keypoints
 from yolo6d_car.path_utils import load_local_paths, resolve_path
 from yolo6d_car.pose.pnp import project_points
-from yolo6d_car.transforms import compose_poses, invert_pose, matrix_to_quaternion, pose_from_matrix, transform_points
+from yolo6d_car.transforms import (
+    compose_poses,
+    invert_pose,
+    matrix_to_quaternion,
+    pose_from_matrix,
+    pose_from_quaternion_translation,
+    quaternion_to_matrix,
+    transform_points,
+)
 from yolo6d_car.types import CameraIntrinsics, PoseSE3
 from yolo6d_car.visualization import draw_pose_overlay
 
@@ -132,6 +141,26 @@ def parse_args() -> argparse.Namespace:
         metavar=("ROLL", "PITCH", "YAW"),
         help="Temporarily override T_object_rigid_to_model rotation in degrees.",
     )
+    parser.add_argument(
+        "--static-pose-mode",
+        choices=("nearest", "robust-window"),
+        default="robust-window",
+        help="Use a nearest mocap sample or a robust aggregate for static captures.",
+    )
+    parser.add_argument("--static-window-s", type=float, default=0.25, help="Half-width of the static pose window in seconds.")
+    parser.add_argument("--static-min-samples", type=int, default=15, help="Minimum valid mocap samples required per rigid and image.")
+    parser.add_argument("--static-min-inlier-ratio", type=float, default=0.8, help="Minimum fraction retained after robust outlier rejection.")
+    parser.add_argument("--static-translation-p90-mm", type=float, default=2.0, help="Reject a static window above this translation P90.")
+    parser.add_argument("--static-translation-max-mm", type=float, default=5.0, help="Reject a static window above this maximum translation deviation.")
+    parser.add_argument("--static-rotation-p90-deg", type=float, default=0.5, help="Reject a static window above this rotation P90.")
+    parser.add_argument("--static-rotation-max-deg", type=float, default=2.0, help="Reject a static window above this maximum rotation deviation.")
+    parser.add_argument(
+        "--allow-unvalidated-object-frame",
+        action="store_true",
+        help="Permit the unvalidated Rigid0/model identity only together with --diagnostic-only.",
+    )
+    parser.add_argument("--diagnostic-only", action="store_true", help="Write diagnostics and overlays but do not write training labels.")
+    parser.add_argument("--max-samples", type=int, default=None, help="Limit input rows for a small diagnostic smoke run.")
     return parser.parse_args()
 
 
@@ -195,25 +224,112 @@ def _parse_fzmotion_start_time(text: str) -> datetime | None:
     return None
 
 
+def _first_non_empty(row: dict[str, str], *keys: str) -> str:
+    """Return the first non-empty CSV value among compatible schema aliases."""
+    for key in keys:
+        value = (row.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _sample_image_path(samples_dir: Path, row: dict[str, str]) -> str:
+    """Normalize old samples.csv and click capture_index.csv image fields."""
+    image_path = _first_non_empty(row, "image_path", "relative_image_path")
+    if image_path:
+        return image_path
+    image_filename = _first_non_empty(row, "image_filename", "filename")
+    if image_filename:
+        return str(Path("images") / image_filename)
+    pose_id = _first_non_empty(row, "pose_id")
+    if pose_id:
+        return str(Path("images") / f"{pose_id}.png")
+    raise KeyError(f"sample row missing image path fields under {samples_dir}")
+
+
+def _load_sample_rows(samples_dir: Path) -> list[dict[str, str]]:
+    """Load label samples from either legacy samples.csv or click capture_index.csv."""
+    candidates = [samples_dir / "samples.csv", samples_dir / "capture_index.csv"]
+    last_error: str | None = None
+
+    for path in candidates:
+        if not path.exists():
+            continue
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            rows = list(reader)
+            fieldnames = set(reader.fieldnames or [])
+
+        if not rows:
+            last_error = f"{path} is empty"
+            continue
+        if not ({"image_path", "image_filename", "pose_id"} & fieldnames):
+            last_error = f"{path} missing image path fields"
+            continue
+
+        normalized_rows: list[dict[str, str]] = []
+        for index, row in enumerate(rows):
+            normalized = dict(row)
+            normalized["sample_index"] = _first_non_empty(
+                row, "sample_index", "index", "sample_id"
+            ) or str(index)
+            normalized["image_path"] = _sample_image_path(samples_dir, row)
+            normalized["pose_id"] = _first_non_empty(row, "pose_id") or Path(
+                normalized["image_path"]
+            ).stem
+            normalized["frame_id"] = _first_non_empty(
+                row, "frame_id", "frame_number", "frame"
+            )
+
+            timestamp_s = _first_non_empty(row, "timestamp_s", "timestamp", "device_timestamp_s")
+            if timestamp_s:
+                normalized["timestamp_s"] = timestamp_s
+            saved_unix = _first_non_empty(
+                row, "saved_unix_time_s", "save_end_time", "host_receive_time"
+            )
+            if saved_unix:
+                normalized["saved_unix_time_s"] = saved_unix
+
+            normalized_rows.append(normalized)
+
+        _log_status(f"Using sample list: {path} ({len(normalized_rows)} rows)")
+        return normalized_rows
+
+    detail = f"; last_error={last_error}" if last_error else ""
+    raise FileNotFoundError(
+        f"No usable samples.csv or capture_index.csv found under {samples_dir}{detail}"
+    )
+
+
+def _numeric_timestamp_to_mocap_s(value: str, mocap_start_dt: datetime | None, source: str) -> tuple[float, str]:
+    """Convert either relative seconds or local Unix seconds to Mocap relative seconds."""
+    timestamp = float(value)
+    if timestamp > 100_000_000 and mocap_start_dt is not None:
+        sample_dt = datetime.fromtimestamp(timestamp)
+        return (sample_dt - mocap_start_dt).total_seconds(), f"{source}_unix"
+    return timestamp, source
+
+
 def _resolve_sample_timestamp_s(row: dict[str, str], mocap_start_dt: datetime | None) -> tuple[float, str]:
-    """把 samples.csv 的时间字段转换到 Mocap CSV 的相对秒时间轴。"""
+    """把 samples.csv / capture_index.csv 的时间字段转换到 Mocap CSV 时间轴。"""
     saved_local_time = (row.get("saved_local_time") or "").strip()
-    if saved_local_time and mocap_start_dt is not None:
+    if saved_local_time:
         try:
             sample_dt = datetime.fromisoformat(saved_local_time)
-            return (sample_dt - mocap_start_dt).total_seconds(), "saved_local_time"
+            if mocap_start_dt is not None:
+                return (sample_dt - mocap_start_dt).total_seconds(), "saved_local_time"
         except ValueError:
-            pass
+            try:
+                return _numeric_timestamp_to_mocap_s(saved_local_time, mocap_start_dt, "saved_local_time")
+            except ValueError:
+                pass
 
-    saved_unix = (row.get("saved_unix_time_s") or "").strip()
-    if saved_unix and mocap_start_dt is not None:
-        try:
-            sample_dt = datetime.fromtimestamp(float(saved_unix))
-            return (sample_dt - mocap_start_dt).total_seconds(), "saved_unix_time_s"
-        except ValueError:
-            pass
+    for key in ("timestamp_s", "device_timestamp_s", "saved_unix_time_s"):
+        value = (row.get(key) or "").strip()
+        if value:
+            return _numeric_timestamp_to_mocap_s(value, mocap_start_dt, key)
 
-    return float(row["device_timestamp_s"]), "device_timestamp_s"
+    raise KeyError("sample row missing timestamp_s/timestamp/device_timestamp_s")
 
 
 def _rpy_deg_to_matrix(roll_deg: float, pitch_deg: float, yaw_deg: float) -> np.ndarray:
@@ -304,11 +420,213 @@ def _effective_object_model_config(config: ProjectConfig, args: argparse.Namespa
     return model_config
 
 
+def _is_identity_pose(pose: PoseSE3, atol: float = 1e-10) -> bool:
+    return bool(
+        np.allclose(pose.rotation, np.eye(3, dtype=np.float64), atol=atol)
+        and np.allclose(pose.translation_m, np.zeros(3, dtype=np.float64), atol=atol)
+    )
+
+
+def _load_geometry_contract(
+    config_path: Path,
+    object_model_config: dict,
+    object_points_xyz: np.ndarray,
+    object_rigid_to_model: PoseSE3,
+    args: argparse.Namespace,
+) -> dict:
+    """Load auditable model geometry and reject an unvalidated identity transform."""
+    raw_config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    transform_raw = raw_config.get("mocap", {}).get("T_object_rigid_to_model", {})
+    transform_meta = dict(transform_raw.get("metadata", {}))
+
+    model_payload: dict = {}
+    model_path: Path | None = None
+    if object_model_config["keypoints_mode"].lower() == "custom":
+        model_path = Path(object_model_config["model_json_path"]).resolve()
+        model_payload = json.loads(model_path.read_text(encoding="utf-8-sig"))
+
+    frame_contract = dict(model_payload.get("coordinate_frame", {}))
+    transform_status = str(transform_meta.get("status", "unrecorded")).lower()
+    frame_status = str(frame_contract.get("status", "unrecorded")).lower()
+    validated = transform_status == "validated" and frame_status == "validated"
+    identity_unvalidated = _is_identity_pose(object_rigid_to_model) and not validated
+
+    bbox_raw = model_payload.get("bbox_corners_3d")
+    center_raw = model_payload.get("center_3d")
+    geometry_source = "explicit_model_geometry"
+    if bbox_raw is None or center_raw is None:
+        if not (args.allow_unvalidated_object_frame and args.diagnostic_only):
+            raise RuntimeError(
+                "Car Model geometry contract is incomplete: bbox_corners_3d and center_3d are required. "
+                "Formal labels are blocked until T_Rigid0_CarModel and model geometry are calibrated."
+            )
+        if object_points_xyz.shape[0] < 8:
+            raise RuntimeError("Diagnostic fallback requires at least 8 model points.")
+        bbox_points = object_points_xyz[:8].copy()
+        center = np.mean(bbox_points, axis=0)
+        geometry_source = "diagnostic_legacy_first_8_points_fallback"
+    else:
+        bbox_points = np.asarray(
+            [item["xyz_m"] if isinstance(item, dict) else item for item in bbox_raw],
+            dtype=np.float64,
+        ).reshape(-1, 3)
+        center = np.asarray(center_raw.get("xyz_m") if isinstance(center_raw, dict) else center_raw, dtype=np.float64).reshape(3)
+        if bbox_points.shape != (8, 3):
+            raise ValueError("bbox_corners_3d must contain exactly 8 XYZ points.")
+
+    if identity_unvalidated:
+        if not (args.allow_unvalidated_object_frame and args.diagnostic_only):
+            raise RuntimeError(
+                "T_object_rigid_to_model is identity but its frame equivalence is not validated. "
+                "Formal label generation is blocked; calibrate T_Rigid0_CarModel first."
+            )
+
+    return {
+        "status": "validated" if validated else "calibration_required",
+        "formal_labels_allowed": bool(validated),
+        "identity_unvalidated": bool(identity_unvalidated),
+        "transform_direction": transform_meta.get(
+            "direction",
+            "p_Rigid0 = T_Rigid0_CarModel @ p_CarModel",
+        ),
+        "transform_source": transform_meta.get("source", "unrecorded"),
+        "calibration_method": transform_meta.get("calibration_method", "unrecorded"),
+        "model_path": None if model_path is None else str(model_path),
+        "frame_contract": frame_contract,
+        "geometry_source": geometry_source,
+        "bbox_points_xyz": bbox_points,
+        "center_xyz": center,
+        "raw_config_provenance": dict(raw_config.get("provenance", {})),
+    }
+
+
+def _rotation_deviation_deg(reference: np.ndarray, rotations: list[np.ndarray]) -> np.ndarray:
+    values = []
+    for rotation in rotations:
+        relative = reference.T @ rotation
+        cosine = np.clip((np.trace(relative) - 1.0) * 0.5, -1.0, 1.0)
+        values.append(np.degrees(np.arccos(cosine)))
+    return np.asarray(values, dtype=np.float64)
+
+
+def _mean_rotation_sign_safe(rotations: list[np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
+    quaternions = np.asarray([matrix_to_quaternion(rotation) for rotation in rotations], dtype=np.float64)
+    reference_q = quaternions[0]
+    quaternions = np.asarray([q if np.dot(q, reference_q) >= 0.0 else -q for q in quaternions])
+    scatter = quaternions.T @ quaternions
+    _, eigenvectors = np.linalg.eigh(scatter)
+    quaternion = eigenvectors[:, -1]
+    if np.dot(quaternion, reference_q) < 0.0:
+        quaternion = -quaternion
+    quaternion /= np.linalg.norm(quaternion)
+    return quaternion_to_matrix(quaternion), quaternion
+
+
+def _rotation_medoid(rotations: list[np.ndarray]) -> np.ndarray:
+    """Choose a robust observed rotation before rejecting gross outliers."""
+    median_distances = []
+    for candidate in rotations:
+        median_distances.append(float(np.median(_rotation_deviation_deg(candidate, rotations))))
+    return rotations[int(np.argmin(median_distances))]
+
+
+def _robust_static_pose(
+    provider: CSVRigidBodyProvider,
+    rigid_body: str,
+    timestamp_s: float,
+    args: argparse.Namespace,
+) -> tuple[PoseSE3 | None, dict]:
+    """Aggregate a static mocap window using translation median and sign-safe quaternion mean."""
+    if args.static_pose_mode == "nearest":
+        pose = provider.get_pose(rigid_body, timestamp_s, max_time_diff_s=args.static_window_s)
+        status = "OK" if pose is not None else "REJECT_MISSING_POSE"
+        return pose, {"status": status, "mode": "nearest", "sample_count": int(pose is not None)}
+
+    samples = provider.get_pose_window(rigid_body, timestamp_s, args.static_window_s)
+    if len(samples) < args.static_min_samples:
+        return None, {
+            "status": "REJECT_MISSING_POSE",
+            "mode": "robust-window",
+            "sample_count": len(samples),
+            "required_sample_count": int(args.static_min_samples),
+        }
+
+    translations = np.asarray([sample.pose.translation_m for sample in samples], dtype=np.float64)
+    rotations = [sample.pose.rotation for sample in samples]
+    translation = np.median(translations, axis=0)
+
+    rotation = _rotation_medoid(rotations)
+    raw_translation_deviation_mm = np.linalg.norm(translations - translation[None, :], axis=1) * 1000.0
+    raw_rotation_deviation_deg = _rotation_deviation_deg(rotation, rotations)
+    inlier_mask = (
+        (raw_translation_deviation_mm <= args.static_translation_max_mm)
+        & (raw_rotation_deviation_deg <= args.static_rotation_max_deg)
+    )
+    inlier_count = int(np.sum(inlier_mask))
+    minimum_inliers = max(args.static_min_samples, int(np.ceil(len(samples) * args.static_min_inlier_ratio)))
+    if inlier_count < minimum_inliers:
+        return None, {
+            "status": "REJECT_MOCAP_UNSTABLE",
+            "mode": "robust-window",
+            "sample_count": len(samples),
+            "inlier_count": inlier_count,
+            "outlier_count": len(samples) - inlier_count,
+            "minimum_inliers": minimum_inliers,
+            "raw_translation_max_mm": float(np.max(raw_translation_deviation_mm)),
+            "raw_rotation_max_deg": float(np.max(raw_rotation_deviation_deg)),
+        }
+
+    translations = translations[inlier_mask]
+    rotations = [rotation_item for rotation_item, keep in zip(rotations, inlier_mask) if keep]
+    translation = np.median(translations, axis=0)
+    rotation, quaternion = _mean_rotation_sign_safe(rotations)
+    translation_deviation_mm = np.linalg.norm(translations - translation[None, :], axis=1) * 1000.0
+    rotation_deviation_deg = _rotation_deviation_deg(rotation, rotations)
+    metrics = {
+        "status": "OK",
+        "mode": "robust-window",
+        "sample_count": len(samples),
+        "inlier_count": inlier_count,
+        "outlier_count": len(samples) - inlier_count,
+        "inlier_ratio": float(inlier_count / len(samples)),
+        "window_half_width_s": float(args.static_window_s),
+        "translation_deviation_mm": {
+            "p50": float(np.percentile(translation_deviation_mm, 50)),
+            "p90": float(np.percentile(translation_deviation_mm, 90)),
+            "max": float(np.max(translation_deviation_mm)),
+        },
+        "rotation_deviation_deg": {
+            "p50": float(np.percentile(rotation_deviation_deg, 50)),
+            "p90": float(np.percentile(rotation_deviation_deg, 90)),
+            "max": float(np.max(rotation_deviation_deg)),
+        },
+    }
+    unstable = (
+        metrics["translation_deviation_mm"]["p90"] > args.static_translation_p90_mm
+        or metrics["translation_deviation_mm"]["max"] > args.static_translation_max_mm
+        or metrics["rotation_deviation_deg"]["p90"] > args.static_rotation_p90_deg
+        or metrics["rotation_deviation_deg"]["max"] > args.static_rotation_max_deg
+    )
+    if unstable:
+        metrics["status"] = "REJECT_MOCAP_UNSTABLE"
+        return None, metrics
+
+    pose = pose_from_quaternion_translation(
+        parent_frame="mocap_world",
+        child_frame=rigid_body,
+        translation_m=translation,
+        quaternion_xyzw=quaternion,
+        timestamp_s=timestamp_s,
+    )
+    return pose, metrics
+
+
 def _world_camera_optical_pose(
     config: ProjectConfig,
     provider: CSVRigidBodyProvider,
     timestamp_s: float,
-) -> PoseSE3 | None:
+    args: argparse.Namespace,
+) -> tuple[PoseSE3 | None, dict]:
     """计算 T_world_camera_optical；优先用静态配置，否则由相机刚体外参推得。"""
     mocap_timestamp_s = timestamp_s + config.mocap.time_offset_s
 
@@ -321,21 +639,36 @@ def _world_camera_optical_pose(
             rotation=static_pose.rotation.copy(),
             translation_m=static_pose.translation_m.copy(),
             timestamp_s=timestamp_s,
-        )
+        ), {"status": "OK", "mode": "configured_static_pose", "sample_count": 0}
 
     if config.mocap.camera_rigid_body is None or config.mocap.camera_rigid_to_optical is None:
-        return None
+        return None, {"status": "REJECT_MISSING_POSE", "mode": "camera_transform_unavailable", "sample_count": 0}
 
-    # 动捕给的是世界到相机刚体，乘上相机刚体到光学坐标系外参。
-    camera_rigid_pose = provider.get_pose(
-        rigid_body=config.mocap.camera_rigid_body,
-        timestamp_s=mocap_timestamp_s,
-        max_time_diff_s=config.mocap.max_time_diff_s,
+    # 动捕给的是世界到当前相机刚体。若当前刚体定义与外参标定时的 canonical
+    # 刚体不同，必须先显式经过已验证 bridge，再接冻结的 Camera external。
+    camera_rigid_pose, quality = _robust_static_pose(
+        provider,
+        config.mocap.camera_rigid_body,
+        mocap_timestamp_s,
+        args,
     )
     if camera_rigid_pose is None:
-        return None
+        return None, quality
 
-    return compose_poses(camera_rigid_pose, config.mocap.camera_rigid_to_optical)
+    camera_rigid_to_optical = config.mocap.camera_rigid_to_optical
+    bridge = config.mocap.camera_rigid_bridge
+    if bridge is not None:
+        camera_rigid_to_optical = compose_poses(
+            bridge.current_rigid_to_canonical,
+            camera_rigid_to_optical,
+        )
+        quality = {
+            **quality,
+            "camera_rigid_bridge_status": bridge.validation_status,
+            "camera_rigid_bridge_artifact": str(bridge.artifact_path),
+        }
+
+    return compose_poses(camera_rigid_pose, camera_rigid_to_optical), quality
 
 
 def _camera_object_pose(
@@ -343,33 +676,40 @@ def _camera_object_pose(
     provider: CSVRigidBodyProvider,
     timestamp_s: float,
     object_rigid_to_model: PoseSE3,
-) -> PoseSE3 | None:
+    args: argparse.Namespace,
+) -> tuple[PoseSE3 | None, PoseSE3 | None, dict]:
     """计算最终投影所需的 T_camera_optical_object_model。"""
-    world_camera_optical = _world_camera_optical_pose(config, provider, timestamp_s)
+    world_camera_optical, camera_quality = _world_camera_optical_pose(config, provider, timestamp_s, args)
     if world_camera_optical is None:
-        return None
+        return None, None, {"camera_rigid": camera_quality, "object_rigid": None}
 
     mocap_timestamp_s = timestamp_s + config.mocap.time_offset_s
-    object_rigid_pose = provider.get_pose(
-        rigid_body=config.mocap.object_rigid_body,
-        timestamp_s=mocap_timestamp_s,
-        max_time_diff_s=config.mocap.max_time_diff_s,
+    object_rigid_pose, object_quality = _robust_static_pose(
+        provider,
+        config.mocap.object_rigid_body,
+        mocap_timestamp_s,
+        args,
     )
     if object_rigid_pose is None:
-        return None
+        return None, None, {"camera_rigid": camera_quality, "object_rigid": object_quality}
 
     # 坐标链：camera <- world <- object_rigid <- object_model。
     world_object_model = compose_poses(object_rigid_pose, object_rigid_to_model)
     camera_optical_world = invert_pose(world_camera_optical)
-    return compose_poses(camera_optical_world, world_object_model)
+    camera_object_model = compose_poses(camera_optical_world, world_object_model)
+    camera_object_rigid = compose_poses(camera_optical_world, object_rigid_pose)
+    return camera_object_model, camera_object_rigid, {
+        "camera_rigid": camera_quality,
+        "object_rigid": object_quality,
+    }
 
 
-def _compute_bbox_xyxy(projected_px: np.ndarray, in_frame_mask: np.ndarray, width: int, height: int) -> list[float] | None:
-    """根据落在图像内的关键点生成像素 bbox。"""
-    if not np.any(in_frame_mask):
+def _compute_bbox_xyxy(projected_px: np.ndarray, front_mask: np.ndarray, width: int, height: int) -> list[float] | None:
+    """Project all eight 3D bbox corners, then clip the resulting rectangle."""
+    if projected_px.shape != (8, 2) or not np.all(front_mask) or not np.isfinite(projected_px).all():
         return None
 
-    points = projected_px[in_frame_mask]
+    points = projected_px
     x0 = float(np.clip(np.min(points[:, 0]), 0.0, width - 1.0))
     y0 = float(np.clip(np.min(points[:, 1]), 0.0, height - 1.0))
     x1 = float(np.clip(np.max(points[:, 0]), 0.0, width - 1.0))
@@ -409,6 +749,71 @@ def _keypoints_to_yolo(projected_px: np.ndarray, front_mask: np.ndarray, in_fram
     return values
 
 
+def _draw_diagnostic_overlay(
+    image_bgr: np.ndarray,
+    object_points_xyz: np.ndarray,
+    object_edges: list[tuple[int, int]] | None,
+    bbox_points_xyz: np.ndarray,
+    center_xyz: np.ndarray,
+    pose_camera_model: PoseSE3,
+    pose_camera_rigid: PoseSE3,
+    intrinsics: CameraIntrinsics,
+    sample_index: int,
+    num_in_frame: int,
+    quality: dict,
+) -> np.ndarray:
+    overlay = draw_pose_overlay(
+        image_bgr=image_bgr,
+        object_points_xyz=object_points_xyz,
+        pose_camera_object=pose_camera_model,
+        intrinsics=intrinsics,
+        color_bgr=(0, 255, 0),
+        label="Car Model keypoints",
+        edges=object_edges,
+    )
+
+    bbox_px = np.round(project_points(bbox_points_xyz, pose_camera_model, intrinsics)).astype(int)
+    bbox_edges = ((0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7))
+    for start, end in bbox_edges:
+        cv2.line(overlay, tuple(bbox_px[start]), tuple(bbox_px[end]), (0, 255, 255), 2)
+
+    axis_length_m = 0.08
+    axis_points = np.vstack(
+        [
+            center_xyz,
+            center_xyz + np.array([axis_length_m, 0.0, 0.0]),
+            center_xyz + np.array([0.0, axis_length_m, 0.0]),
+            center_xyz + np.array([0.0, 0.0, axis_length_m]),
+        ]
+    )
+    axis_px = np.round(project_points(axis_points, pose_camera_model, intrinsics)).astype(int)
+    center_px = tuple(axis_px[0])
+    cv2.circle(overlay, center_px, 7, (255, 0, 255), -1)
+    cv2.putText(overlay, "Model center", center_px, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2, cv2.LINE_AA)
+    for endpoint, color, label in zip(axis_px[1:], ((0, 0, 255), (0, 255, 0), (255, 0, 0)), ("+X", "+Y", "+Z")):
+        cv2.arrowedLine(overlay, center_px, tuple(endpoint), color, 2, cv2.LINE_AA, tipLength=0.15)
+        cv2.putText(overlay, label, tuple(endpoint), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA)
+
+    rigid_origin_px = np.round(project_points(np.zeros((1, 3)), pose_camera_rigid, intrinsics)[0]).astype(int)
+    rigid_origin = tuple(rigid_origin_px)
+    cv2.drawMarker(overlay, rigid_origin, (255, 255, 255), cv2.MARKER_CROSS, 18, 2)
+    cv2.putText(overlay, "Rigid0 origin", rigid_origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+    object_status = (quality.get("object_rigid") or {}).get("status", "UNKNOWN")
+    camera_status = (quality.get("camera_rigid") or {}).get("status", "UNKNOWN")
+    cv2.putText(
+        overlay,
+        f"sample={sample_index} in_frame={num_in_frame} R0={object_status} R1={camera_status}",
+        (16, 32),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.65,
+        (0, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+    return overlay
+
+
 def _write_yolo_label(path: Path, class_id: int, bbox_xywh: list[float], keypoints_yolo: list[float]) -> None:
     """写一行 YOLO Pose 标签：class bbox keypoints。"""
     values = [float(class_id), *bbox_xywh, *keypoints_yolo]
@@ -419,6 +824,8 @@ def _write_yolo_label(path: Path, class_id: int, bbox_xywh: list[float], keypoin
 def main() -> None:
     """读取样本、动捕和外参，逐帧投影 3D 模型点并写 YOLO Pose 标签。"""
     args = parse_args()
+    if not 0.0 < args.static_min_inlier_ratio <= 1.0:
+        raise SystemExit("--static-min-inlier-ratio must be in (0, 1]")
     if args.validate_config:
         validate_label_config(args)
         return None
@@ -459,10 +866,22 @@ def main() -> None:
     object_rigid_to_model = _effective_object_rigid_to_model(config, args)
     object_points_xyz = build_object_keypoints(object_model_config)
     object_edges = build_object_edges(object_model_config)
+    geometry_contract = _load_geometry_contract(
+        Path(args.config).resolve(),
+        object_model_config,
+        object_points_xyz,
+        object_rigid_to_model,
+        args,
+    )
+    bbox_points_xyz = geometry_contract.pop("bbox_points_xyz")
+    model_center_xyz = geometry_contract.pop("center_xyz")
 
-    _log_status(f"Step 5/6 Reading sample list: {samples_dir / 'samples.csv'}")
-    with (samples_dir / "samples.csv").open("r", encoding="utf-8", newline="") as handle:
-        sample_rows = list(csv.DictReader(handle))
+    _log_status(f"Step 5/6 Reading sample list from: {samples_dir}")
+    sample_rows = _load_sample_rows(samples_dir)
+    if args.max_samples is not None:
+        if args.max_samples <= 0:
+            raise ValueError("--max-samples must be positive")
+        sample_rows = sample_rows[: args.max_samples]
 
     total_samples = len(sample_rows)
     progress_interval = max(1, min(50, total_samples // 20 if total_samples > 0 else 1))
@@ -474,6 +893,10 @@ def main() -> None:
     counts = Counter()
     counts["total_rows"] = 0
     counts["saved_labels"] = 0
+    counts["OK"] = 0
+    counts["REJECT_MISSING_POSE"] = 0
+    counts["REJECT_MOCAP_UNSTABLE"] = 0
+    counts["REJECT_OUT_OF_FRAME"] = 0
 
     with annotations_path.open("w", encoding="utf-8") as annotations_file, \
          image_list_path.open("w", encoding="utf-8") as image_list_file:
@@ -485,15 +908,44 @@ def main() -> None:
             timestamp_s, timestamp_source = _resolve_sample_timestamp_s(row, mocap_start_dt)
 
             # 没有匹配到相机或物体 Mocap 位姿时，这一帧不能生成可靠标签。
-            pose_camera_object = _camera_object_pose(config, provider, timestamp_s, object_rigid_to_model)
+            pose_camera_object, pose_camera_rigid, pose_quality = _camera_object_pose(
+                config,
+                provider,
+                timestamp_s,
+                object_rigid_to_model,
+                args,
+            )
             if pose_camera_object is None:
-                counts["skip_missing_mocap"] += 1
+                statuses = {
+                    item.get("status")
+                    for item in pose_quality.values()
+                    if isinstance(item, dict)
+                }
+                rejection = "REJECT_MOCAP_UNSTABLE" if "REJECT_MOCAP_UNSTABLE" in statuses else "REJECT_MISSING_POSE"
+                counts[rejection] += 1
+                counts["skip_missing_mocap"] += int(rejection == "REJECT_MISSING_POSE")
+                annotations_file.write(
+                    json.dumps(
+                        {
+                            "sample_index": sample_index,
+                            "image_path": str(image_path),
+                            "timestamp_s": float(timestamp_s),
+                            "status": rejection,
+                            "mocap_pose_quality": pose_quality,
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
                 if processed_index == 1 or processed_index % progress_interval == 0 or processed_index == total_samples:
                     _log_progress(processed_index, total_samples, counts, run_start_s)
                 continue
 
             camera_points_xyz = transform_points(pose_camera_object, object_points_xyz)
             projected_px = project_points(object_points_xyz, pose_camera_object, intrinsics)
+            bbox_camera_points_xyz = transform_points(pose_camera_object, bbox_points_xyz)
+            bbox_projected_px = project_points(bbox_points_xyz, pose_camera_object, intrinsics)
+            bbox_front_mask = np.isfinite(bbox_projected_px).all(axis=1) & (bbox_camera_points_xyz[:, 2] > 1e-6)
 
             # 只用有限、在相机前方、落在图像内的点计算 bbox 和保留条件。
             finite_mask = np.isfinite(projected_px).all(axis=1)
@@ -509,13 +961,15 @@ def main() -> None:
             num_in_frame = int(np.sum(in_frame_mask))
             if num_in_frame < args.min_inframe_keypoints:
                 counts["skip_too_few_inframe_keypoints"] += 1
+                counts["REJECT_OUT_OF_FRAME"] += 1
                 if processed_index == 1 or processed_index % progress_interval == 0 or processed_index == total_samples:
                     _log_progress(processed_index, total_samples, counts, run_start_s)
                 continue
 
-            bbox_xyxy = _compute_bbox_xyxy(projected_px, in_frame_mask, intrinsics.width, intrinsics.height)
+            bbox_xyxy = _compute_bbox_xyxy(bbox_projected_px, bbox_front_mask, intrinsics.width, intrinsics.height)
             if bbox_xyxy is None:
                 counts["skip_invalid_bbox"] += 1
+                counts["REJECT_OUT_OF_FRAME"] += 1
                 if processed_index == 1 or processed_index % progress_interval == 0 or processed_index == total_samples:
                     _log_progress(processed_index, total_samples, counts, run_start_s)
                 continue
@@ -525,7 +979,8 @@ def main() -> None:
 
             # txt 是 Ultralytics 训练输入；JSONL 保存完整投影和位姿，便于排查标签质量。
             label_path = labels_dir / f"{image_path.stem}.txt"
-            _write_yolo_label(label_path, class_id=args.class_id, bbox_xywh=bbox_xywh_yolo, keypoints_yolo=keypoints_yolo)
+            if not args.diagnostic_only:
+                _write_yolo_label(label_path, class_id=args.class_id, bbox_xywh=bbox_xywh_yolo, keypoints_yolo=keypoints_yolo)
 
             record = {
                 "sample_index": sample_index,
@@ -533,7 +988,9 @@ def main() -> None:
                 "label_path": str(label_path),
                 "timestamp_s": float(timestamp_s),
                 "timestamp_source": timestamp_source,
+                "status": "OK",
                 "bbox_xyxy_px": bbox_xyxy,
+                "projected_bbox_corners_px": [[float(x), float(y)] for x, y in bbox_projected_px.tolist()],
                 "num_keypoints_total": int(object_points_xyz.shape[0]),
                 "num_keypoints_in_frame": num_in_frame,
                 "front_mask": front_mask.astype(int).tolist(),
@@ -545,33 +1002,30 @@ def main() -> None:
                     "quaternion_xyzw": [float(x) for x in matrix_to_quaternion(pose_camera_object.rotation).tolist()],
                     "matrix": [[float(v) for v in row_vals] for row_vals in pose_camera_object.as_matrix().tolist()],
                 },
+                "mocap_pose_quality": pose_quality,
             }
             annotations_file.write(json.dumps(record, ensure_ascii=False) + "\n")
             image_list_file.write(str(image_path) + "\n")
-            counts["saved_labels"] += 1
+            counts["OK"] += 1
+            if not args.diagnostic_only:
+                counts["saved_labels"] += 1
 
             if args.save_overlays:
                 # overlay 是人工抽查最直观的产物，训练时不会读取它。
                 image_bgr = cv2.imread(str(image_path))
                 if image_bgr is not None:
-                    overlay = draw_pose_overlay(
-                        image_bgr=image_bgr,
-                        object_points_xyz=object_points_xyz,
-                        pose_camera_object=pose_camera_object,
-                        intrinsics=intrinsics,
-                        color_bgr=(0, 255, 0),
-                        label="Mocap GT",
-                        edges=object_edges,
-                    )
-                    cv2.putText(
-                        overlay,
-                        f"sample={sample_index} in_frame={num_in_frame}",
-                        (16, 32),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (0, 255, 255),
-                        2,
-                        cv2.LINE_AA,
+                    overlay = _draw_diagnostic_overlay(
+                        image_bgr,
+                        object_points_xyz,
+                        object_edges,
+                        bbox_points_xyz,
+                        model_center_xyz,
+                        pose_camera_object,
+                        pose_camera_rigid,
+                        intrinsics,
+                        sample_index,
+                        num_in_frame,
+                        pose_quality,
                     )
                     cv2.imwrite(str(overlays_dir / image_path.name), overlay)
 
@@ -594,12 +1048,69 @@ def main() -> None:
         },
         "object_model_config": object_model_config,
         "object_rigid_to_model": {
+            "direction": "p_Rigid0 = T_Rigid0_CarModel @ p_CarModel",
             "translation_m": [float(x) for x in object_rigid_to_model.translation_m.tolist()],
             "quaternion_xyzw": [float(x) for x in matrix_to_quaternion(object_rigid_to_model.rotation).tolist()],
+        },
+        "geometry_contract": geometry_contract,
+        "provenance": {
+            "camera_intrinsics_source": str((samples_dir / "intrinsics.json").resolve()),
+            "camera_extrinsic_source": geometry_contract.get("raw_config_provenance", {}).get(
+                "camera_extrinsic_source",
+                "config:T_camera_rigid_to_optical (source id not recorded)",
+            ),
+            "rigid_definition_ids": geometry_contract.get("raw_config_provenance", {}).get(
+                "rigid_definition_ids",
+                {"Rigid0": "unrecorded", "Rigid1": "unrecorded"},
+            ),
+            "object_model_source": geometry_contract.get("model_path"),
+            "T_Rigid0_CarModel_source": geometry_contract.get("transform_source"),
+            "mocap_csv_source": str(config.mocap.csv_path.resolve()),
+            "label_generator_version": "coordinate_contract_v1",
+            "camera_rigid_current_definition": (
+                config.mocap.camera_rigid_bridge.source_frame
+                if config.mocap.camera_rigid_bridge is not None
+                else config.mocap.camera_rigid_body
+            ),
+            "camera_rigid_canonical_definition": (
+                config.mocap.camera_rigid_bridge.target_frame
+                if config.mocap.camera_rigid_bridge is not None
+                else config.mocap.camera_rigid_body
+            ),
+            "camera_rigid_bridge_artifact": (
+                None
+                if config.mocap.camera_rigid_bridge is None
+                else str(config.mocap.camera_rigid_bridge.artifact_path)
+            ),
+            "camera_rigid_bridge_status": (
+                "disabled"
+                if config.mocap.camera_rigid_bridge is None
+                else config.mocap.camera_rigid_bridge.validation_status
+            ),
+            "camera_external_artifact": geometry_contract.get("raw_config_provenance", {}).get(
+                "camera_extrinsic_source",
+                "config:T_camera_rigid_to_optical (source id not recorded)",
+            ),
+            "camera_external_frame": (
+                config.mocap.camera_rigid_bridge.target_frame
+                if config.mocap.camera_rigid_bridge is not None
+                else config.mocap.camera_rigid_body
+            ),
         },
         "counts": dict(counts),
         "timestamp_mode": "saved_local_time if available else fallback",
         "min_inframe_keypoints": int(args.min_inframe_keypoints),
+        "diagnostic_only": bool(args.diagnostic_only),
+        "static_pose": {
+            "mode": args.static_pose_mode,
+            "window_half_width_s": float(args.static_window_s),
+            "minimum_samples": int(args.static_min_samples),
+            "minimum_inlier_ratio": float(args.static_min_inlier_ratio),
+            "translation_p90_limit_mm": float(args.static_translation_p90_mm),
+            "translation_max_limit_mm": float(args.static_translation_max_mm),
+            "rotation_p90_limit_deg": float(args.static_rotation_p90_deg),
+            "rotation_max_limit_deg": float(args.static_rotation_max_deg),
+        },
     }
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     _log_status("Done")

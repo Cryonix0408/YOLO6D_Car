@@ -1,0 +1,66 @@
+{
+  "artifact_type": "camera_rigid_frame_bridge",
+  "validation_status": "validated_engineering",
+  "source_frame": "current_rigid1",
+  "target_frame": "hik_camera_rigid_after_mocap_recalib_001",
+  "transform_direction": "p_CurrentRigid1 = T_CurrentRigid1_1007Rigid1 @ p_1007Rigid1",
+  "scale_fixed": true,
+  "rotation_matrix": [
+    [0.99809583472306, 0.0029281457328850413, 0.06161274763427138],
+    [-0.005643355922460442, 0.9990181789274828, 0.043941218762664165],
+    [-0.06142358864809069, -0.04420525008393074, 0.9971324077687013]
+  ],
+  "quaternion_xyzw": [-0.02205248300575445, 0.030781229815105546, -0.002144418228678758, 0.9992805438688432],
+  "translation_m": [2.0521940177489587e-07, 1.3573764548665495e-07, -5.2050713564277625e-08],
+  "matrix": [
+    [0.99809583472306, 0.0029281457328850413, 0.06161274763427138, 2.0521940177489587e-07],
+    [-0.005643355922460442, 0.9990181789274828, 0.043941218762664165, 1.3573764548665495e-07],
+    [-0.06142358864809069, -0.04420525008393074, 0.9971324077687013, -5.2050713564277625e-08],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "rotation_from_identity_deg": 4.347061919406331,
+  "residual_mm": {
+    "per_1007_marker": {"20100": 0.19563864978237808, "20101": 0.2128215192314791, "20102": 0.6209081903321454, "20103": 0.6811544585365715},
+    "rms": 0.4829766706432249,
+    "max": 0.6811544585365715,
+    "second_best_rms": 9.810781029777829,
+    "ambiguity_ratio": 20.313157189791177
+  },
+  "matching_method": "marker-ID-independent 4! assignment plus scale-fixed rigid Kabsch",
+  "correspondence_1007_to_current": {"20100": "20102", "20101": "20101", "20102": "20100", "20103": "20103"},
+  "marker_identity_note": "The numeric marker IDs are rebuild/session-local correspondence labels, not permanent physical identities.",
+  "future_rigid1_rebuild_rule": [
+    "Export or recover the rebuilt Rigid1 four-marker local geometry.",
+    "Match it to the 1007 canonical geometry with marker-ID-independent 4! assignment.",
+    "Solve T_NewRigid1_1007Rigid1 with scale-fixed rigid Kabsch.",
+    "Check RMS, max residual, second-best RMS, and ambiguity ratio.",
+    "Validate and save a new versioned bridge artifact.",
+    "Keep the Camera external frozen only while the camera-to-marker-assembly mechanical relationship is unchanged; otherwise recalibrate the Camera external."
+  ],
+  "canonical_geometry_artifact": "configs/calibration/rigid1_geometry_1007_canonical_validated.json",
+  "canonical_geometry_sha256": "6FBF9ECCE82747304587C2A7C3DB3C495800FCFD48B78F9E3F4A7CBD25713D5D",
+  "source_diagnostic_artifact": "D:\\CaptureData\\outputs\\calibration\\hik_6mm\\rigid1_bridge_1007_to_current_20261014_diagnostic\\T_CurrentRigid1_1007Rigid1_diagnostic.json",
+  "source_diagnostic_sha256": "8F3CE16367E590E4A613DB74C406D5B9D359375EF2E1558E52EC08DC7DAB5522",
+  "source_current_geometry_artifact": "D:\\CaptureData\\outputs\\calibration\\hik_6mm\\rigid1_bridge_1007_to_current_20261014_diagnostic\\rigid1_geometry_static0004_current.json",
+  "source_current_geometry_sha256": "0D341D560A24B8E05934720B692257BFBDB360D867D5FC3003B397420D21E801",
+  "layer_a_validation": {
+    "classification": "RIGID1_BRIDGE_VALIDATED_DIAGNOSTIC",
+    "stable_yaw_deg": [15, 30, 45, 60, 75, 180],
+    "old_status": "LEFT_DOWN",
+    "bridged_status": "GOOD",
+    "median_du_px": 114.8741550342167,
+    "median_dv_px": -80.94207049597696,
+    "p90_displacement_px": 146.2928594402553,
+    "max_displacement_px": 146.81722086211306,
+    "report": "D:\\CaptureData\\outputs\\calibration\\hik_6mm\\rigid1_bridge_layer_a_replay_static0004_20261014_diagnostic\\rigid1_bridge_layer_a_replay_report.json",
+    "report_sha256": "B33D8435DD4BD640ED7955DFA9B9546ADA33B697DBE094E93AAF32C62CE2652E"
+  },
+  "production_path_regression": {
+    "status": "passed",
+    "stable_yaw_deg": [15, 30, 45, 60, 75, 180],
+    "old_status": "LEFT_DOWN",
+    "bridged_status": "GOOD",
+    "report": "D:\\CaptureData\\outputs\\calibration\\hik_6mm\\rigid1_bridge_layer_a_production_regression_static0004_20261015\\rigid1_bridge_layer_a_replay_report.json",
+    "report_sha256": "E1D78219DA3F0710C792B0E2683BFAEDF8FC4BFC1719044748C3FBBF883B60CD"
+  }
+}
