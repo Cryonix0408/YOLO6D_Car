@@ -36,7 +36,11 @@
   [uav_4m_20sessions_pose_20260413_v1_clean](./outputs/datasets/uav_4m_20sessions_pose_20260413_v1_clean)
 - 当前推荐训练权重：
   [best.pt](./outputs/train_runs/uav_4m_20sessions_pose_v1/weights/best.pt)
-- 当前离线 / 标注配置：
+- 当前正式标签配置：
+  [fzmotion_hikvision_6mm_current_rigid1_20261007_003_labels.yaml](./configs/fzmotion_hikvision_6mm_current_rigid1_20261007_003_labels.yaml)
+  使用 1007 Camera External、已验证的 Camera Bridge、正式 Rigid0 Registration 和当前 Car Model。
+  2026-10-18 新版 Rigid0 不可直接复用旧 registration，须重新验证。
+- 历史离线 / 标注配置（不作为当前正式标签入口）：
   [fzmotion_fixed_camera_current_rigids.yaml](./configs/fzmotion_fixed_camera_current_rigids.yaml)
 - 当前实时推理配置模板：
   [fzmotion_fixed_camera_live_v1.yaml](./configs/fzmotion_fixed_camera_live_v1.yaml)
@@ -91,7 +95,7 @@
 
 Hikrobot 6mm/8mm 配置中的内参路径推荐写成
 `outputs/calibration/<lens>/camera_intrinsics_<lens>.yaml`。运行采集或
-`--validate-config` 时，该路径会根据传入的 `configs/paths/paths_local.yaml` 或
+`--validate-config` 时，该路径会根据传入的 `configs/paths_local.yaml` 或
 `configs/paths/paths_laptop.yaml` 分别解析到主机 G 盘或采集笔记本 `D:\CaptureData`；
 历史绝对路径仍保持兼容。
 
@@ -109,8 +113,8 @@ Hikrobot 6mm/8mm 配置中的内参路径推荐写成
   `D:\Envs\yolo6d\python.exe`
 - 大数据根目录：
   `G:\YOLO6D_Car_Data`
-- 本机路径配置：
-  [configs/paths/paths_local.yaml](./configs/paths/paths_local.yaml)
+- 本机路径配置：由 `configs/paths.example.yaml` 复制创建 `configs/paths_local.yaml`，并修改为本机路径。
+  旧 `configs/paths/paths_local.yaml` 仅为历史工作站配置，不作为当前推荐入口。
 
 推荐的大数据目录结构：
 
@@ -136,7 +140,7 @@ D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\
 G 盘路径配置 smoke test：
 
 ```powershell
-D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\local_smoke_replay_gdrive.yaml --paths-config .\configs\paths\paths_local.yaml --max-frames 3
+D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\local_smoke_replay_gdrive.yaml --paths-config .\configs\paths_local.yaml --max-frames 3
 ```
 
 采集到 G 盘：
@@ -144,15 +148,15 @@ D:\Envs\yolo6d\python.exe .\scripts\smoke_replay_pipeline.py --config .\configs\
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\capture_object_samples.py `
   --config .\configs\object_capture.yaml `
-  --paths-config .\configs\paths\paths_local.yaml
+  --paths-config .\configs\paths_local.yaml
 ```
 
 使用 G 盘数据自动打标签：
 
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\generate_mocap_labels.py `
-  --config .\configs\fzmotion_fixed_camera_current_rigids.yaml `
-  --paths-config .\configs\paths\paths_local.yaml `
+  --config .\configs\fzmotion_hikvision_6mm_current_rigid1_20261007_003_labels.yaml `
+  --paths-config .\configs\paths_local.yaml `
   --samples-dir outputs/object_capture/<session_name> `
   --csv-path FZmotion_Data/<session_name>.csv `
   --output-dir outputs/auto_labels/<session_name> `
@@ -163,7 +167,7 @@ D:\Envs\yolo6d\python.exe .\scripts\generate_mocap_labels.py `
 
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\prepare_yolo_pose_dataset.py `
-  --paths-config .\configs\paths\paths_local.yaml `
+  --paths-config .\configs\paths_local.yaml `
   --auto-label-dir outputs/auto_labels/<session_name> `
   --out-dir outputs/datasets/<dataset_name>
 ```
@@ -172,7 +176,7 @@ D:\Envs\yolo6d\python.exe .\scripts\prepare_yolo_pose_dataset.py `
 
 ```powershell
 D:\Envs\yolo6d\python.exe .\scripts\train_ultralytics_pose.py `
-  --paths-config .\configs\paths\paths_local.yaml `
+  --paths-config .\configs\paths_local.yaml `
   --dataset outputs/datasets/<dataset_name>/dataset.yaml `
   --model yolov8n-pose.pt `
   --project outputs/train_runs `
@@ -235,7 +239,7 @@ python .\scripts\capture_object_samples.py --config .\configs\object_capture.yam
 
 ```powershell
 python .\scripts\generate_mocap_labels.py `
-  --config .\configs\fzmotion_fixed_camera_current_rigids.yaml `
+  --config .\configs\fzmotion_hikvision_6mm_current_rigid1_20261007_003_labels.yaml `
   --samples-dir .\outputs\object_capture\<session_name> `
   --csv-path D:\YOLO6D_Car\FZmotion_Data\<session_name>.csv `
   --output-dir .\outputs\auto_labels\<session_name> `
@@ -276,7 +280,9 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 
 ### 配置
 
-- 离线打标签 / 回放：
+- 正式离线标签配置：
+  [fzmotion_hikvision_6mm_current_rigid1_20261007_003_labels.yaml](./configs/fzmotion_hikvision_6mm_current_rigid1_20261007_003_labels.yaml)
+- 历史离线配置：
   [fzmotion_fixed_camera_current_rigids.yaml](./configs/fzmotion_fixed_camera_current_rigids.yaml)
 - 实时推理：
   [fzmotion_fixed_camera_live_v1.yaml](./configs/fzmotion_fixed_camera_live_v1.yaml)
@@ -292,7 +298,7 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 ### 模型
 
 - 当前 12 点小车模型：
-  [car_custom_keypoints_12_migrated_200xx_exact.json](./models/car_custom_keypoints_12_migrated_200xx_exact.json)
+  [car_custom_keypoints_12_current_rigid0_200xx.json](./models/car_custom_keypoints_12_current_rigid0_200xx.json)
 
 ### 数据与训练产物
 
@@ -330,7 +336,7 @@ python .\scripts\run_pipeline.py --config .\configs\fzmotion_fixed_camera_live_v
 - 代码仓库：`D:\Research\YOLO6D_Car`
 - Python：`D:\Envs\yolo6d\python.exe`
 - 大数据根目录：`G:\YOLO6D_Car_Data`
-- 路径配置：`configs\paths\paths_local.yaml`
+- 路径配置：从 `configs\paths.example.yaml` 创建的本机 `configs\paths_local.yaml`
 
 重要原则：代码、配置、文档、小型示例留在 D 盘 Git 仓库；真实 captures、FzMotion CSV、auto labels、datasets、train runs、best.pt、results、logs 放到 G 盘，不要提交到 Git。
 

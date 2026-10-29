@@ -60,3 +60,4 @@ tmp_label_qa/
 
 # Workstation-specific path overrides
 /configs/paths_local.yaml
+/configs/paths/paths_local.yaml

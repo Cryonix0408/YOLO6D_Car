@@ -1,0 +1,6 @@
+# Preserve exact bytes for SHA256-verified calibration provenance.
+/configs/calibration/T_current_rigid1_to_1007_rigid1_validated_20261014.json text eol=lf
+/configs/calibration/T_current_rigid0_from_canonical_car_model_validated_20261015.json text eol=lf
+/configs/calibration/rigid1_geometry_1007_canonical_validated.json text eol=lf
+/configs/calibration/rigid0_to_canonical_car_model_registration_20261013_diagnostic.json text eol=lf
+/models/car_rigid0_current_20261012_markers.json text eol=crlf
