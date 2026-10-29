@@ -1,0 +1,10 @@
+# Example paths only. Copy to configs/paths_local.yaml and replace every path.
+paths:
+  project_root: "D:/Projects/YOLO6D_Car"
+  data_root: "D:/YOLO6D_Data"
+  fzmotion_root: "D:/YOLO6D_Data/FZmotion_Data"
+  captures_root: "D:/YOLO6D_Data/captures"
+  outputs_root: "D:/YOLO6D_Data/outputs"
+  models_root: "D:/YOLO6D_Data/models"
+  results_root: "D:/YOLO6D_Data/results"
+  logs_root: "D:/YOLO6D_Data/logs"

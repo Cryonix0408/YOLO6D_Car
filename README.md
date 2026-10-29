@@ -1,5 +1,15 @@
 ﻿# YOLO6D_Car 项目说明
 
+## 本科生入门 / 项目阅读指南
+
+第一次接触本项目，请先阅读以下三份文档：
+
+- [本科生入门指南](docs/UNDERGRADUATE_GUIDE.md)：项目简介、Pipeline 说明、代码阅读顺序、可承担任务
+- [环境准备与快速上手](docs/GETTING_STARTED.md)：环境安装、无设备使用模式、本地路径说明
+- [正式版本与 Artifact 指南](docs/ARTIFACT_AND_VERSION_GUIDE.md)：各标定文件状态、Epoch 限制、坐标系约定
+
+---
+
 本项目用于完成一套面向小车目标的 6DoF 位姿估计流程，核心链路包括：
 
 - 使用 `Intel RealSense D455` 采集图像
@@ -19,6 +29,8 @@
 - D455 实时推理
 
 ## 当前推荐版本
+
+以下 `outputs/` 数据集和权重属于本机外部数据，不随 Git 仓库提供；如需使用请联系项目负责人。
 
 - 当前推荐训练数据集：
   [uav_4m_20sessions_pose_20260413_v1_clean](./outputs/datasets/uav_4m_20sessions_pose_20260413_v1_clean)

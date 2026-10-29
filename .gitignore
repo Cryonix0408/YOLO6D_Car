@@ -46,3 +46,17 @@ data/synthetic/
 *.log
 *.tmp
 .pytest_cache/
+
+# Temporary working files and debug outputs
+tmp_*/
+tmp_label_qa/
+
+# Presentation build cache (Codex PPT, LaTeX, etc.)
+.codex-pptx/
+
+# Local reports and diagnostics
+/reports/
+/diagnostics/
+
+# Workstation-specific path overrides
+/configs/paths_local.yaml

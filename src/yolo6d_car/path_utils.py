@@ -41,6 +41,11 @@ def load_local_paths(paths_config: str | Path) -> LocalPaths:
     """Load configs/paths_local.yaml and return absolute Path objects."""
     config_path = Path(paths_config).resolve()
     if not config_path.exists():
+        if config_path.name == "paths_local.yaml":
+            raise FileNotFoundError(
+                f"缺少本地路径配置：{config_path}。"
+                "请复制 configs/paths.example.yaml 为 configs/paths_local.yaml，并修改为本机路径。"
+            )
         raise FileNotFoundError(f"Paths config not found: {config_path}")
 
     with config_path.open("r", encoding="utf-8") as handle:
